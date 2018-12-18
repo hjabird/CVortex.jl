@@ -62,7 +62,7 @@ function induced_velocity(
 	measurement_point :: Vec3f,
 	kernel :: VortexFunc)
 	
-	pargarr = Vector{Ref{VortexParticle}}(undef, length(inducing_particles))
+	pargarr = Vector{Ptr{VortexParticle}}(undef, length(inducing_particles))
 	for i = 1 : length(pargarr)
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
@@ -76,7 +76,7 @@ function induced_velocity(
 	ret = ccall(
 			("cvtx_ParticleArr_ind_vel", "cvortex"), 
 			Vec3f, 
-			(Ref{Ref{VortexParticle}}, Cint, Vec3f, Ref{VortexFunc}),
+			(Ref{Ptr{VortexParticle}}, Cint, Vec3f, Ref{VortexFunc}),
 			pargarr, length(inducing_particles), measurement_point, kernel
 			)
 	return ret
@@ -88,13 +88,9 @@ function induced_velocity(
 	kernel :: VortexFunc)
 	
 	
-	pargarr = Vector{Ref{VortexParticle}}(undef, length(inducing_particles))
+	pargarr = Vector{Ptr{VortexParticle}}(undef, length(inducing_particles))
 	for i = 1 : length(pargarr)
 		pargarr[i] = Base.pointer(inducing_particles, i)
-	end
-	margarr = Vector{Ref{Vec3f}}(undef, length(inducing_particles))
-	for i = 1 : length(margarr)
-		margarr[i] = Base.pointer(measurement_points, i)
 	end
 	ret = Vector{Vec3f}(undef, length(measurement_points))
 	#=
@@ -109,9 +105,9 @@ function induced_velocity(
 	ccall(
 		("cvtx_ParticleArr_Arr_ind_vel", "cvortex"), 
 		Cvoid, 
-		(Ref{Ref{VortexParticle}}, Cint, Ptr{Ptr{Vec3f}}, 
-			Cint, Ptr{Vec3f}, Ref{VortexFunc}),
-		pargarr, length(inducing_particles), margarr, 
+		(Ptr{Ptr{VortexParticle}}, Cint, Ptr{Vec3f}, 
+			Cint, Ref{Vec3f}, Ref{VortexFunc}),
+		pargarr, length(inducing_particles), measurement_points, 
 			length(measurement_points), ret, kernel
 		)
 	return ret
@@ -142,7 +138,7 @@ function induced_dvort(
 	induced_particle :: VortexParticle,
 	kernel :: VortexFunc)
 	
-	pargarr = Vector{Ref{VortexParticle}}(undef, length(inducing_particles))
+	pargarr = Vector{Ptr{VortexParticle}}(undef, length(inducing_particles))
 	for i = 1 : length(pargarr)
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
@@ -156,7 +152,7 @@ function induced_dvort(
 	ret = ccall(
 			("cvtx_ParticleArr_ind_dvort", "cvortex"), 
 			Vec3f, 
-			(Ref{Ref{VortexParticle}}, Cint, Ref{VortexParticle}, Ref{VortexFunc}),
+			(Ref{Ptr{VortexParticle}}, Cint, Ref{VortexParticle}, Ref{VortexFunc}),
 			pargarr, length(inducing_particles), induced_particle, kernel
 			)
 	return ret
@@ -167,12 +163,12 @@ function induced_dvort(
 	induced_particles :: Vector{VortexParticle},
 	kernel :: VortexFunc)
 	
-	pargarr = Vector{Ref{VortexParticle}}(undef, length(inducing_particles))
+	pargarr = Vector{Ptr{VortexParticle}}(undef, length(inducing_particles))
 	for i = 1 : length(pargarr)
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
-	indarg = Vector{Ref{VortexParticle}}(undef, length(inducing_particles))
-	for i = 1 : length(pargarr)
+	indarg = Vector{Ptr{VortexParticle}}(undef, length(induced_particles))
+	for i = 1 : length(indarg)
 		indarg[i] = Base.pointer(induced_particles, i)
 	end
 	ret = Vector{Vec3f}(undef, length(induced_particles))
@@ -188,7 +184,7 @@ function induced_dvort(
 	ccall(
 		("cvtx_ParticleArr_Arr_ind_dvort", "cvortex"), 
 		Cvoid, 
-		(Ref{Ref{VortexParticle}}, Cint, Ptr{Ptr{VortexParticle}}, Cint, 
+		(Ptr{Ptr{VortexParticle}}, Cint, Ptr{Ptr{VortexParticle}}, Cint, 
 			Ptr{Vec3f}, Ref{VortexFunc}),
 		pargarr, length(inducing_particles), indarg, length(induced_particles),
 			ret, kernel
