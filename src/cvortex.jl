@@ -12,7 +12,7 @@ export 	Vec3f,
 
 import Libdl: dlopen
 		
-const libcvortex = joinpath(dirname(dirname(@__FILE__)), "libcvortex")
+const libcvortex = joinpath(dirname(dirname(@__FILE__)), "deps/libcvortex")
 function __init__()
 	try
 		dlopen(libcvortex)
@@ -46,19 +46,19 @@ end
 
 #= Functions to to get VortexFunc structures =#
 function VortFunc_singular()
-	ret = ccall(("cvtx_VortFunc_singular", "cvortex"), VortexFunc, ())
+	ret = ccall(("cvtx_VortFunc_singular", libcvortex), VortexFunc, ())
 	return ret;
 end
 function VortFunc_winckelmans()
-	ret = ccall(("cvtx_VortFunc_winckelmans", "cvortex"), VortexFunc, ())
+	ret = ccall(("cvtx_VortFunc_winckelmans", libcvortex), VortexFunc, ())
 	return ret;
 end
 function VortFunc_planetary()
-	ret = ccall(("cvtx_VortFunc_planetary", "cvortex"), VortexFunc, ())
+	ret = ccall(("cvtx_VortFunc_planetary", libcvortex), VortexFunc, ())
 	return ret;
 end
 function VortFunc_gaussian()
-	ret = ccall(("cvtx_VortFunc_gaussian", "cvortex"), VortexFunc, ())
+	ret = ccall(("cvtx_VortFunc_gaussian", libcvortex), VortexFunc, ())
 	return ret;
 end
 
@@ -77,7 +77,7 @@ function induced_velocity(
 		float regularisation_radius);
 	=#
 	ret = ccall(
-			("cvtx_Particle_ind_vel", "cvortex"), 
+			("cvtx_Particle_ind_vel", libcvortex), 
 			Vec3f, 
 			(Ref{VortexParticle}, Vec3f, Ref{VortexFunc}, Cfloat),
 			inducing_particle, measurement_point, 
@@ -105,7 +105,7 @@ function induced_velocity(
 		float regularisation_radius);
 	=#		
 	ret = ccall(
-			("cvtx_ParticleArr_ind_vel", "cvortex"), 
+			("cvtx_ParticleArr_ind_vel", libcvortex), 
 			Vec3f, 
 			(Ref{Ptr{VortexParticle}}, Cint, Vec3f, Ref{VortexFunc}, Cfloat),
 			pargarr, length(inducing_particles), measurement_point, 
@@ -137,7 +137,7 @@ function induced_velocity(
 		float regularisation_radius);
 	=#	
 	ccall(
-		("cvtx_ParticleArr_Arr_ind_vel", "cvortex"), 
+		("cvtx_ParticleArr_Arr_ind_vel", libcvortex), 
 		Cvoid, 
 		(Ptr{Ptr{VortexParticle}}, Cint, Ptr{Vec3f}, 
 			Cint, Ref{Vec3f}, Ref{VortexFunc}, Cfloat),
@@ -161,7 +161,7 @@ function induced_dvort(
 		float regularisation_radius);
 	=#
 	ret = ccall(
-			("cvtx_Particle_ind_dvort", "cvortex"), 
+			("cvtx_Particle_ind_dvort", libcvortex), 
 			Vec3f, 
 			(Ref{VortexParticle}, Ref{VortexParticle}, Ref{VortexFunc}, Cfloat),
 			inducing_particle, induced_particle, kernel, regularisation_radius
@@ -188,7 +188,7 @@ function induced_dvort(
 		float regularisation_radius)
 	=#
 	ret = ccall(
-			("cvtx_ParticleArr_ind_dvort", "cvortex"), 
+			("cvtx_ParticleArr_ind_dvort", libcvortex), 
 			Vec3f, 
 			(Ref{Ptr{VortexParticle}}, Cint, Ref{VortexParticle}, Ref{VortexFunc}, Cfloat),
 			pargarr, length(inducing_particles), induced_particle, kernel, regularisation_radius
@@ -222,7 +222,7 @@ function induced_dvort(
 		float regularisation_radius)
 	=#
 	ccall(
-		("cvtx_ParticleArr_Arr_ind_dvort", "cvortex"), 
+		("cvtx_ParticleArr_Arr_ind_dvort", libcvortex), 
 		Cvoid, 
 		(Ptr{Ptr{VortexParticle}}, Cint, Ptr{Ptr{VortexParticle}}, Cint, 
 			Ptr{Vec3f}, Ref{VortexFunc}, Cfloat),
