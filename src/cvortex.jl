@@ -397,12 +397,13 @@ function induced_velocity_influence_matrix(
 	# Julia is column major, C is row major. 
 	ret = Matrix{Float32}(undef, length(inducing_filaments), length(measurement_points))
 	#=void cvtx_StraightVortFilArr_inf_mtrx(
-	const cvtx_StraightVortFil **array_start,
-	const int num_filaments,
-	const bsv_V3f *mes_start,
-	const bsv_V3f *dir_start,
-	const int num_mes,
-	float *result_matrix); =#
+		const cvtx_StraightVortFil **array_start,
+		const int num_filaments,
+		const bsv_V3f *mes_start,
+		const bsv_V3f *dir_start,
+		const int num_mes,
+		float *result_matrix); 
+	=#
 	ccall(
 		("cvtx_StraightVortFilArr_inf_mtrx", libcvortex), 
 		Cvoid, 
@@ -412,6 +413,55 @@ function induced_velocity_influence_matrix(
 		measurement_directions,	length(measurement_points), ret
 		)
 	return transpose(ret) # Fix row major -> column major
+end
+
+#= Ease of use functions ---------------------------------------------------=#
+function Base.convert(::Vector{T}, a::Vec3f) where T<:Real
+	return Vector{T}([a.x, a.y, a.z])
+end
+
+function Base.convert(::Matrix{T}, a::Vector{Vec3f}) where T <: Real
+	len = length(a)
+	mat = Matrix{T}(undef, len, 3)
+	for i = 1 : len
+		mat[i, :] = [a.x, a.y, a.z]
+	end
+	return mat
+end
+
+function Base.convert(::Vec3f, a::Vector{T}) where T<:Real
+	@assert(length(a) == 3, "Vector is expected to be of length 3. "*
+		"Actual length is ", length(a),".")
+	return Vec3f(a[1], a[2], a[3])
+end
+
+function Base.convert(::Vector{Vec3f}, a::Matrix{T}) where T <: Real
+	@assert(size(a)[2] == 3, "Input matrix is expected to be n rows by 3 "*
+		"columns. Actual input matrix size was " * string(size(a)))
+	len = size(a)[1]
+	v = Vector{Vec3f}(undef, len)
+	for i = 1 : len
+		v[i] = convert(::Vec3f, a[i, :])
+	end
+	return v
+end
+
+function induced_velocity(
+	filaments :: Vector{VortexFilament},
+	mes_points :: Matrix{T}) where T<:Real
+	return induced_velocity(filaments, convert(::Vector{Vec3f}, mes_points))
+end
+
+function induced_velocity(
+	inducing_particles :: Vector{VortexParticle},
+	measurement_points :: Matrix{T},
+	kernel :: VortexFunc,
+	regularisation_radius :: T) where T<:Real
+	return induced_velocity(
+		inducing_particles, 
+		convert(::Vector{Vec3f}, measurement_points),
+		kernel,
+		regularisation_radius)
 end
 
 #= cvortex accelerator controls --------------------------------------------=#
