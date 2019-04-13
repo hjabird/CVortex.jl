@@ -12,7 +12,7 @@ export 	Vec3f,
 
 import Libdl: dlopen
 		
-const libcvortex = joinpath(dirname(dirname(@__FILE__)), "deps/libcvortex")
+const libcvortex = joinpath(dirname(dirname(@__FILE__)), "deps/cvortex")
 function __init__()
 	try
 		dlopen(libcvortex)
@@ -21,6 +21,10 @@ function __init__()
 			"\n\tRebuild package and restart julia",
 			"\n\tCheck that OpenCL is installed on your PC.\n")
 	end
+	# Inialisation is automatic:
+	ccall(
+		("cvtx_initialise", libcvortex),
+		Cvoid, ())
 end
 
 #--------------------------------------------------------------------------------------------
@@ -42,6 +46,12 @@ struct VortexParticle
 	coord :: Vec3f
 	vorticity :: Vec3f
 	volume :: Float32
+end
+
+struct VortexFilament
+	coord1 :: Vec3f
+	coord2 :: Vec3f
+	vorticity_density :: Float32
 end
 
 #= Functions to to get VortexFunc structures =#
@@ -230,6 +240,219 @@ function induced_dvort(
 			ret, kernel, regularisation_radius
 		)
 	return ret
+end
+
+#= Functions to compute effects on a vortex filament =#
+function induced_velocity(
+	inducing_filaments :: VortexFilament,
+	measurement_point :: Vec3f) where T <: Real
+	
+	#=
+	bsv_V3f cvtx_StraightVortFil_ind_vel(
+		const cvtx_StraightVortFil *self,
+		const bsv_V3f mes_point);
+	=#
+	ret = ccall(
+			("cvtx_StraightVortexFilament_ind_vel", libcvortex), 
+			Vec3f, 
+			(Ref{VortexFilament}, Vec3f),
+			inducing_filaments, measurement_point
+			)
+	return ret
+end
+
+function induced_velocity(
+	inducing_filaments :: Vector{VortexFilament},
+	measurement_point :: Vec3f) where T <: Real
+	
+	pargarr = Vector{Ptr{VortexFilament}}(undef, length(inducing_filaments))
+	for i = 1 : length(pargarr)
+		pargarr[i] = Base.pointer(inducing_filaments, i)
+	end
+	#=
+	bsv_V3f cvtx_StraightVortFilArr_ind_vel(
+		const cvtx_StraightVortFil **array_start,
+		const int num_filaments,
+		const bsv_V3f mes_point)
+	=#		
+	ret = ccall(
+			("cvtx_StraightVortFilArr_ind_vel", libcvortex), 
+			Vec3f, 
+			(Ref{Ptr{VortexFilament}}, Cint, Vec3f),
+			pargarr, length(inducing_filaments), measurement_point
+			)
+	return ret
+end
+
+function induced_velocity(
+	inducing_filaments :: Vector{VortexFilament},
+	measurement_points :: Vector{Vec3f}) where T <: Real
+	
+	pargarr = Vector{Ptr{VortexFilament}}(undef, length(inducing_filaments))
+	for i = 1 : length(pargarr)
+		pargarr[i] = Base.pointer(inducing_filaments, i)
+	end
+	ret = Vector{Vec3f}(undef, length(measurement_points))
+	#=
+	void cvtx_StraightVortFilArr_Arr_ind_vel(
+		const cvtx_StraightVortFil **array_start,
+		const int num_filaments,
+		const bsv_V3f *mes_start,
+		const int num_mes,
+		bsv_V3f *result_array)
+	=#	
+	ccall(
+		("cvtx_StraightVortFilArr_Arr_ind_vel", libcvortex), 
+		Cvoid, 
+		(Ptr{Ptr{VortexFilament}}, Cint, Ptr{Vec3f}, 
+			Cint, Ref{Vec3f}),
+		pargarr, length(inducing_filaments), measurement_points, 
+			length(measurement_points), ret
+		)
+	return ret
+end
+
+function induced_dvort(
+	inducing_filaments :: VortexFilament,
+	induced_particle :: VortexParticle)  where T <: Real
+	
+	#=
+	bsv_V3f cvtx_StraightVortFil_ind_dvort(
+		const cvtx_StraightVortFil *self,
+		const cvtx_Particle *induced_particle);
+	=#
+	ret = ccall(
+			("cvtx_StraightVortFil_ind_dvort", libcvortex), 
+			Vec3f, 
+			(Ref{VortexFilament}, Ref{VortexParticle}),
+			inducing_filaments, induced_particle
+			)
+	return ret
+end
+
+function induced_dvort(
+	inducing_filaments :: Vector{VortexFilament},
+	induced_particle :: VortexParticle) where T <: Real
+	
+	pargarr = Vector{Ptr{VortexFilament}}(undef, length(inducing_filaments))
+	for i = 1 : length(pargarr)
+		pargarr[i] = Base.pointer(inducing_filaments, i)
+	end
+	#=
+	bsv_V3f cvtx_StraightVortFilArr_ind_dvort(
+		const cvtx_StraightVortFil **array_start,
+		const int num_filaments,
+		const cvtx_Particle *induced_particle);
+	=#
+	ret = ccall(
+			("cvtx_StraightVortFilArr_ind_dvort", libcvortex), 
+			Vec3f, 
+			(Ref{Ptr{VortexFilament}}, Cint, Ref{VortexParticle}),
+			pargarr, length(inducing_filaments), induced_particle
+			)
+	return ret
+end
+
+function induced_dvort(
+	inducing_filaments :: Vector{VortexFilament},
+	induced_particles :: Vector{VortexParticle}) where T <: Real
+	
+	pargarr = Vector{Ptr{VortexFilament}}(undef, length(inducing_filaments))
+	for i = 1 : length(pargarr)
+		pargarr[i] = Base.pointer(inducing_filaments, i)
+	end
+	indarg = Vector{Ptr{VortexParticle}}(undef, length(induced_particles))
+	for i = 1 : length(indarg)
+		indarg[i] = Base.pointer(induced_particles, i)
+	end
+	ret = Vector{Vec3f}(undef, length(induced_particles))
+	#=
+	void cvtx_StraightVortFilArr_Arr_ind_dvort(
+		const cvtx_StraightVortFil **array_start,
+		const int num_filaments,
+		const cvtx_Particle **induced_start,
+		const int num_induced,
+		bsv_V3f *result_array);
+	=#
+	ccall(
+		("cvtx_StraightVortFilArr_Arr_ind_dvort", libcvortex), 
+		Cvoid, 
+		(Ptr{Ptr{VortexFilament}}, Cint, Ptr{Ptr{VortexParticle}}, Cint, 
+			Ptr{Vec3f}),
+		pargarr, length(inducing_filaments), indarg, length(induced_particles),
+			ret
+		)
+	return ret
+end
+
+function induced_velocity_influence_matrix(
+	inducing_filaments :: Vector{VortexFilament},
+	measurement_points :: Vector{Vec3f},
+	measurement_directions :: Vector{Vec3f}) where T <: Real
+	
+	pargarr = Vector{Ptr{VortexFilament}}(undef, length(inducing_filaments))
+	for i = 1 : length(pargarr)
+		pargarr[i] = Base.pointer(inducing_filaments, i)
+	end
+	# Julia is column major, C is row major. 
+	ret = Matrix{Float32}(undef, length(inducing_filaments), length(measurement_points))
+	#=void cvtx_StraightVortFilArr_inf_mtrx(
+	const cvtx_StraightVortFil **array_start,
+	const int num_filaments,
+	const bsv_V3f *mes_start,
+	const bsv_V3f *dir_start,
+	const int num_mes,
+	float *result_matrix); =#
+	ccall(
+		("cvtx_StraightVortFilArr_inf_mtrx", libcvortex), 
+		Cvoid, 
+		(Ptr{Ptr{VortexFilament}}, Cint, Ptr{Vec3f}, Ptr{Vec3f},
+			Cint, Ref{Float32}),
+		pargarr, length(inducing_filaments), measurement_points, 
+		measurement_directions,	length(measurement_points), ret
+		)
+	return transpose(ret) # Fix row major -> column major
+end
+
+#= cvortex accelerator controls --------------------------------------------=#
+function cvortex_number_of_accelerators()
+	res = ccall(("cvtx_num_accelerators", libcvortex),
+		Cint, ())
+	return res
+end
+
+function cvortex_number_of_enabled_accelerators()
+	# int cvtx_num_enabled_accelerators();
+	res = ccall(("cvtx_num_enabled_accelerators", libcvortex), Cint, ())
+	return res
+end
+
+function cvortex_accelerator_name(accelerator_id :: Int)
+	# char* cvtx_accelerator_name(int accelerator_id);
+	res = ccall(("cvtx_accelerator_name", libcvortex), 
+		Cstring, (Cint,), accelerator_id)
+	return string(res)
+end
+
+function cvortex_accelerator_enabled(accelerator_id :: Int)
+	# int cvtx_accelerator_enabled(int accelerator_id);
+	res = ccall(("cvtx_accelerator_enabled", libcvortex), 
+		Cint, (Cint,), accelerator_id)
+	return res
+end
+
+function cvortex_accelerator_enable(accelerator_id :: Int)
+	# void cvtx_accelerator_enable(int accelerator_id);
+	ccall(("cvtx_accelerator_enable", libcvortex), 
+		Cvoid, (Cint,), accelerator_id)
+	return
+end
+
+function cvortex_accelerator_disable(accelerator_id :: Int)
+	# void cvtx_accelerator_disable(int accelerator_id);
+	ccall(("cvtx_accelerator_disable", libcvortex), 
+		Cvoid, (Cint,), accelerator_id)
+	return
 end
 
 end #module
