@@ -7,8 +7,8 @@ println("Running...")
 print("Disabling accelerator " * cvortex.cvortex_accelerator_name(0) * "\n")
 # cvortex.cvortex_accelerator_disable(0)
 let
-    n_rings = 200
-    p_per_ring = 400
+    n_rings = 800
+    p_per_ring = 150
     f_per_ring = p_per_ring
     total_points = n_rings * p_per_ring
     total_fils = n_rings * f_per_ring
@@ -17,7 +17,7 @@ let
     str = 0.0005
 
     n_steps = 40
-    dt = 0.05
+    dt = 0.1
     println("Total number of filaments is ", total_fils, ".")
 
     # Create a load of vortex particles in rings.

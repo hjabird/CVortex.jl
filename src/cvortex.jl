@@ -441,7 +441,7 @@ function Base.convert(::Vector{Vec3f}, a::Matrix{T}) where T <: Real
 	len = size(a)[1]
 	v = Vector{Vec3f}(undef, len)
 	for i = 1 : len
-		v[i] = convert(::Vec3f, a[i, :])
+		v[i] = convert(Vec3f, a[i, :])
 	end
 	return v
 end
@@ -449,7 +449,7 @@ end
 function induced_velocity(
 	filaments :: Vector{VortexFilament},
 	mes_points :: Matrix{T}) where T<:Real
-	return induced_velocity(filaments, convert(::Vector{Vec3f}, mes_points))
+	return induced_velocity(filaments, convert(Vector{Vec3f}, mes_points))
 end
 
 function induced_velocity(
@@ -459,7 +459,7 @@ function induced_velocity(
 	regularisation_radius :: T) where T<:Real
 	return induced_velocity(
 		inducing_particles, 
-		convert(::Vector{Vec3f}, measurement_points),
+		convert(Vector{Vec3f}, measurement_points),
 		kernel,
 		regularisation_radius)
 end
