@@ -1,3 +1,35 @@
+##############################################################################
+#
+# cvortex.jl
+#
+# Provides GPU accelerated vortex particle and vortex filaments methods. A
+# wrapper for the C cvortex library.
+#
+# Copyright 2019 HJA Bird
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to 
+# deal in the Software without restriction, including without limitation the 
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is 
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in 
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+##############################################################################
+
+"""
+cvortex contains GPU accelerated method for vortex particles and vortex 
+filaments.
+"""
 module cvortex
 
 export 	Vec3f,
@@ -12,7 +44,7 @@ export 	Vec3f,
 
 import Libdl: dlopen
 		
-const libcvortex = joinpath(dirname(dirname(@__FILE__)), "deps/cvortex")
+const libcvortex = joinpath(dirname(dirname(@__FILE__)), "deps/libcvortex")
 function __init__()
 	try
 		dlopen(libcvortex)
@@ -27,13 +59,29 @@ function __init__()
 		Cvoid, ())
 end
 
-#--------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+"""
+	A 3D Float32 vector.
+"""
 struct Vec3f
 	x :: Float32
 	y :: Float32
 	z :: Float32
 end
 
+"""
+	A 3D vortex regularisation fuction
+
+	The method by which the singular nature of a vortex particle is handelled.
+	Generally, this structure is best obtained via VortFunc_*. For example
+	VortFunc_singular(), VortFunc_planetary(), VortFunc_winckelmans() or
+	VortFunc_gaussian().
+
+	Exposure of this allows the use of user kernels in the CPU multithreaded
+	implementations in cvortex. If you're interested in this, looking at the
+	cvortex library and the source of cvortex.jl is suggested to understand
+	the required functions signitures. 
+"""
 struct VortexFunc
 	g_fn :: Ptr{Cvoid}			# Actually float(*g_fn)(float rho)
 	zeta_fn :: Ptr{Cvoid}		# Actually float(*zeta_fn)(float rho)
@@ -42,12 +90,27 @@ struct VortexFunc
 	cl_kernel_name_ext :: NTuple{32, Cchar}	# Char[32]
 end
 
+"""
+	Representation of a vortex particle.
+
+	coord is a particle's position.
+	vorticity is the particle's vorticity
+	volume is the volume of the particle. This is only important for 
+	viscous vortex particle strength exchange methods (not included in this
+	wrapper)
+"""
 struct VortexParticle
 	coord :: Vec3f
 	vorticity :: Vec3f
 	volume :: Float32
 end
 
+"""
+	Representation of a straight singular vortex filament
+
+	The filament starts at coord1, ends at coord2 and has vorticity per unit
+	length of vorticity_density.
+"""
 struct VortexFilament
 	coord1 :: Vec3f
 	coord2 :: Vec3f
@@ -73,6 +136,19 @@ function VortFunc_gaussian()
 end
 
 #= Functions to compute effects on a vortex particle =#
+"""
+	Compute the velocity induced in the flow field by inducers at measurement 
+	points.
+
+	Argument 1: inducer - The vortex particle(s) or filament(s) inducing the
+		the velocity.
+	Argument 2: measurement points.
+	Additional arguments are required. See methods(induced_velocity) for a 
+	list of methods.
+
+	Vortex particles also require a regularisation kernel::VortexFunc and 
+	regularisation radius.
+"""
 function induced_velocity(
 	inducing_particle :: VortexParticle,
 	measurement_point :: Vec3f,
@@ -157,6 +233,13 @@ function induced_velocity(
 	return ret
 end
 
+"""
+	Rate of change of vorticity induced on vortex particles by element in the 
+	flowfield.
+
+	
+	See methods(induced_velocity) for a list of methods.
+"""
 function induced_dvort(
 	inducing_particle :: VortexParticle,
 	induced_particle :: VortexParticle,
@@ -385,6 +468,14 @@ function induced_dvort(
 	return ret
 end
 
+"""
+	The influence of vortex filaments on normal velocities at points in the
+	domain.
+
+	A list of i filaments induces a velocity at j measurement points with 
+	j corresponding measurement directions. The velocity in these
+	measurement directions is returned as a matrix of j by i.
+"""
 function induced_velocity_influence_matrix(
 	inducing_filaments :: Vector{VortexFilament},
 	measurement_points :: Vector{Vec3f},
@@ -395,7 +486,8 @@ function induced_velocity_influence_matrix(
 		pargarr[i] = Base.pointer(inducing_filaments, i)
 	end
 	# Julia is column major, C is row major. 
-	ret = Matrix{Float32}(undef, length(inducing_filaments), length(measurement_points))
+	ret = Matrix{Float32}(undef, length(inducing_filaments), 
+		length(measurement_points))
 	#=void cvtx_StraightVortFilArr_inf_mtrx(
 		const cvtx_StraightVortFil **array_start,
 		const int num_filaments,
@@ -465,43 +557,87 @@ function induced_velocity(
 end
 
 #= cvortex accelerator controls --------------------------------------------=#
+"""
+	The number of GPU or other accelerators found by the cvortex library.
+
+It is possible that accelerators may be listed multiple times if they can
+be used by more than one installed platform.
+To know how many are in use see cvortex_number_of_enabled_accelerators()
+"""
 function cvortex_number_of_accelerators()
 	res = ccall(("cvtx_num_accelerators", libcvortex),
 		Cint, ())
 	return res
 end
 
+"""
+	The number of accelerators that cvortex has been directed to use.
+
+If no accelerators are in use this is zero, and the CPU is used for 
+all computation.
+
+Find which accelerators are enabled using cvortex_accelerator_enabled,
+and enable and disable with cvortex_accelerator_enable and 
+cvortex_accelerator_disable.
+"""
 function cvortex_number_of_enabled_accelerators()
 	# int cvtx_num_enabled_accelerators();
 	res = ccall(("cvtx_num_enabled_accelerators", libcvortex), Cint, ())
 	return res
 end
 
+"""
+	The name of an accelerator.
+
+Input is an integer in the range 1:cvortex_number_of_accelerators(). Returns
+the name of the accelerator as a string.
+"""
 function cvortex_accelerator_name(accelerator_id :: Int)
+	@assert(accelerator_id >= 1, "Minimum accelerator id is 1.")
+	@assert(accelerator_id <= cvortex_number_of_accelerators(),
+		"accelerator_id is higher than the number of accelerators found.")
 	# char* cvtx_accelerator_name(int accelerator_id);
 	res = ccall(("cvtx_accelerator_name", libcvortex), 
-		Cstring, (Cint,), accelerator_id)
-	return string(res)
+		Cstring, (Cint,), accelerator_id-1)
+	return unsafe_string(res)
 end
 
+"""
+	States whether cvortex is in use.
+"""
 function cvortex_accelerator_enabled(accelerator_id :: Int)
+	@assert(accelerator_id >= 1, "Minimum accelerator id is 1.")
+	@assert(accelerator_id <= cvortex_number_of_accelerators(),
+		"accelerator_id is higher than the number of accelerators found.")
 	# int cvtx_accelerator_enabled(int accelerator_id);
 	res = ccall(("cvtx_accelerator_enabled", libcvortex), 
-		Cint, (Cint,), accelerator_id)
+		Cint, (Cint,), accelerator_id-1)
 	return res
 end
 
+"""
+	Allows cvortex to use an accelerator.
+"""
 function cvortex_accelerator_enable(accelerator_id :: Int)
+	@assert(accelerator_id >= 1, "Minimum accelerator id is 1.")
+	@assert(accelerator_id <= cvortex_number_of_accelerators(),
+		"accelerator_id is higher than the number of accelerators found.")
 	# void cvtx_accelerator_enable(int accelerator_id);
 	ccall(("cvtx_accelerator_enable", libcvortex), 
-		Cvoid, (Cint,), accelerator_id)
+		Cvoid, (Cint,), accelerator_id-1)
 	return
 end
 
+"""
+	Stops cvortex using an accelerator.
+"""
 function cvortex_accelerator_disable(accelerator_id :: Int)
+	@assert(accelerator_id >= 1, "Minimum accelerator id is 1.")
+	@assert(accelerator_id <= cvortex_number_of_accelerators(),
+		"accelerator_id is higher than the number of accelerators found.")
 	# void cvtx_accelerator_disable(int accelerator_id);
 	ccall(("cvtx_accelerator_disable", libcvortex), 
-		Cvoid, (Cint,), accelerator_id)
+		Cvoid, (Cint,), accelerator_id-1)
 	return
 end
 
