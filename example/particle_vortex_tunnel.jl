@@ -25,14 +25,14 @@ let
     radius = 0.5
     len = 1
     # The discretisation
-    n_rings = 100
-    p_per_ring = 100
+    n_rings = 40
+    p_per_ring = 40
     # The strength of the vortex particles and the time step parameters
-    str = 0.05
+    str = 1 / n_rings
     n_steps = 40
-    dt = 0.1
+    dt = 0.025
     # And the regularisation of the particle-particle interaction
-    kernel = winckelmans_regularisation()
+    kernel = singular_regularisation()
     regdist = max(len / n_rings, 2 * pi * radius / p_per_ring) * 2
 
     total_points = n_rings * p_per_ring
@@ -48,8 +48,8 @@ let
             xloc = ring_idx * len / n_rings
             yloc = radius * cos(2 * pi * p_in_ring_idx / p_per_ring)
             zloc = radius * sin(2 * pi * p_in_ring_idx / p_per_ring)
-            yvort = str * radius * -sin(2 * pi * p_in_ring_idx / p_per_ring) / p_per_ring
-            zvort = str * radius * cos(2 * pi * p_in_ring_idx / p_per_ring) / p_per_ring
+            yvort = str * 2 * pi * radius * -sin(2 * pi * p_in_ring_idx / p_per_ring) / p_per_ring
+            zvort = str * 2 * pi * radius * cos(2 * pi * p_in_ring_idx / p_per_ring) / p_per_ring
             particle_pos[acc, :] = [xloc, yloc, zloc]
             particle_vorts[acc, :] = [0.0, yvort, zvort] 
             acc += 1

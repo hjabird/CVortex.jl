@@ -8,6 +8,7 @@
 
 import WriteVTK
 using CVortex
+using Dates 
 
 let
     # We can print information about the system.
@@ -24,12 +25,12 @@ let
     radius = 0.5
     length = 1
     # The discretisation
-    n_rings = 30
-    p_per_ring = 30
-    str = 0.05
+    n_rings = 40
+    p_per_ring = 40
+    str = 1 / n_rings
     # And time stuff.
     n_steps = 40
-    dt = 0.1
+    dt = 0.025
     
     f_per_ring = p_per_ring
     total_points = n_rings * p_per_ring
@@ -91,8 +92,14 @@ let
     end
 
     save_filaments(0)
+    print("Started.")
+    ninter = total_fils * size(points)[1]
     for i = 1 : n_steps
+        tstart = now()
         vels = filament_induced_velocity(fil_starts, fil_ends, fil_strs, points)
+        tend = now()
+        print("\rStep:\t", i, "\tInteractions per second: ", 
+            1000*round(ninter / Float64((tend - tstart).value)),"\t\t\t")
         points .+= dt .* vels
         points_to_fils()
 
