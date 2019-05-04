@@ -1,0 +1,338 @@
+##############################################################################
+#
+# VortexFilament.jl
+#
+# Part of CVortex.jl
+# Representation of a vortex filament.
+#
+# Copyright 2019 HJA Bird
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to 
+# deal in the Software without restriction, including without limitation the 
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is 
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in 
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+##############################################################################
+
+"""
+CVortex internal representation of a straight singular vortex filament
+
+The filament starts at coord1, ends at coord2 and has vorticity per unit
+length of vorticity_density.
+
+You only need to use this if you plan on calling CVortex's underlying 
+library directly.
+"""
+struct VortexFilament
+    coord1 :: Vec3f
+    coord2 :: Vec3f
+    vorticity_density :: Float32
+end
+
+function VortexFilament(
+    coord1::Vector{<:Real}, coord2::Vector{<:Real}, vort::Real)
+    return VortexFilament(Vec3f(coord1), Vec3f(coord2), Float32(vort))
+end
+
+"""
+	Compute the velocity induced in the flow field by vortex filaments.
+
+    Arg1:   The start coordinates of vortex filaments
+    Arg2:   The end coordinates of vortex filaments
+    Arg3:   The strength of vortex filaments
+    Arg4:   The measurement points
+"""
+function filament_induced_velocity(
+    filament_start_coord :: Vector{<:Real},
+    filament_end_coord :: Vector{<:Real},
+    filament_strength :: Real,
+    measurement_point :: Vector{<:Real})
+
+    check_filament_definition(
+        filament_start_coord, filament_end_coord, filament_strength)
+    convertable_to_Vec3f_vect(measurement_point, "measurement_point")
+
+    inducing_filament = VortexFilament(filament_start_coord, filament_end_coord, 
+        filament_strength)
+    mes_pnt = Vec3f(measurement_point)
+
+    ret = Vec3f(0., 0., 0.)
+    #=
+    bsv_V3f cvtx_StraightVortFil_ind_vel(
+        const cvtx_StraightVortFil *self,
+        const bsv_V3f mes_point);
+    =#
+    ret = ccall(
+            ("cvtx_StraightVortexFilament_ind_vel", libcvortex), 
+            Vec3f, 
+            (Ref{VortexFilament}, Vec3f),
+            inducing_filament, mes_pnt)
+    return Vector{Float32}(ret)
+end
+
+function filament_induced_velocity(
+    filament_start_coords :: Matrix{<:Real},
+    filament_end_coords :: Matrix{<:Real},
+    filament_strengths :: Vector{<:Real},
+    measurement_point :: Vector{<:Real})
+
+    check_filament_definition(
+        filament_start_coords, filament_end_coords, filament_strengths)
+    convertable_to_Vec3f_vect(measurement_point, "measurement_point")
+
+    ni = size(filament_end_coords)[1]
+    inducing_filaments = map(
+        i->VortexFilament(filament_start_coords[i,:], filament_end_coords[i, :], 
+        filament_strengths[i]),
+        1:ni)
+    mes_pnt = Vec3f(measurement_point)
+
+    pargarr = Vector{Ptr{VortexFilament}}(undef, ni)
+    for i = 1 : ni
+        pargarr[i] = Base.pointer(inducing_filaments, i)
+    end
+    ret = Vec3f(0., 0., 0.)
+    #=
+    bsv_V3f cvtx_StraightVortFilArr_ind_vel(
+        const cvtx_StraightVortFil **array_start,
+        const int num_filaments,
+        const bsv_V3f mes_point)
+    =#		
+    ret = ccall(
+            ("cvtx_StraightVortFilArr_ind_vel", libcvortex), 
+            Vec3f, 
+            (Ref{Ptr{VortexFilament}}, Cint, Vec3f),
+            pargarr, ni, mes_pnt
+            )
+    return Vector{Float32}(ret)
+end
+
+function filament_induced_velocity(
+    filament_start_coords :: Matrix{<:Real},
+    filament_end_coords :: Matrix{<:Real},
+    filament_strengths :: Vector{<:Real},
+    measurement_points :: Matrix{<:Real})
+
+    check_filament_definition(
+        filament_start_coords, filament_end_coords, filament_strengths)
+    convertable_to_Vec3f_vect(measurement_points, "measurement_points")
+
+    ni = size(filament_end_coords)[1]
+    np = size(measurement_points)[1]
+    inducing_filaments = map(
+        i->VortexFilament(filament_start_coords[i,:], filament_end_coords[i, :], 
+            filament_strengths[i]),
+        1:ni)
+    mes_pnts = map(i->Vec3f(measurement_points[i, :]), 1:np)
+
+    pargarr = Vector{Ptr{VortexFilament}}(undef, ni)
+    for i = 1 : length(pargarr)
+        pargarr[i] = Base.pointer(inducing_filaments, i)
+    end
+    ret = Vector{Vec3f}(undef, np)
+    #=
+    void cvtx_StraightVortFilArr_Arr_ind_vel(
+        const cvtx_StraightVortFil **array_start,
+        const int num_filaments,
+        const bsv_V3f *mes_start,
+        const int num_mes,
+        bsv_V3f *result_array)
+    =#	
+    ccall(
+        ("cvtx_StraightVortFilArr_Arr_ind_vel", libcvortex), 
+        Cvoid, 
+        (Ptr{Ptr{VortexFilament}}, Cint, Ptr{Vec3f}, 
+            Cint, Ref{Vec3f}),
+        pargarr, ni, mes_pnts, np, ret)
+    return Matrix{Float32}(ret)
+end
+
+function induced_dvort(
+    filament_start_coord :: Vector{<:Real},
+    filament_end_coord :: Vector{<:Real},
+    filament_strength :: Real,
+    induced_particle_position :: Vector{<:Real},
+    induced_particle_vorticity :: Vector{<:Real})
+
+    check_filament_definition(
+        filament_start_coord, filament_end_coord, filament_strength)
+
+    inducing_filament = VortexFilament(filament_start_coord, filament_end_coord, 
+        filament_strength)
+    induced_particle = VortexParticle(
+        induced_particle_position, induced_particle_vorticity, 0.0)
+
+    ret = Vec3f(0., 0., 0.)
+    #=
+    bsv_V3f cvtx_StraightVortFil_ind_dvort(
+        const cvtx_StraightVortFil *self,
+        const cvtx_Particle *induced_particle);
+    =#
+    ret = ccall(
+            ("cvtx_StraightVortFil_ind_dvort", libcvortex), 
+            Vec3f, 
+            (Ref{VortexFilament}, Ref{VortexParticle}),
+            inducing_filament, induced_particle
+            )
+    return Vector{Float32}(ret)
+end
+
+function induced_dvort(
+    filament_start_coords :: Matrix{<:Real},
+    filament_end_coords :: Matrix{<:Real},
+    filament_strengths :: Vector{<:Real},
+    induced_particle_position :: Vector{<:Real},
+    induced_particle_vorticity :: Vector{<:Real})
+
+    check_filament_definition(
+        filament_start_coords, filament_end_coords, filament_strengths)
+
+    ni = size(filament_end_coords)[1]
+    inducing_filaments = map(
+        i->VortexFilament(filament_start_coords[i,:], filament_end_coords[i, :], 
+        filament_strengths[i]),
+        1:ni)
+    induced_particle = VortexParticle(
+        induced_particle_position, induced_particle_vorticity, 0.0)
+
+    pargarr = Vector{Ptr{VortexFilament}}(undef, length(inducing_filaments))
+    for i = 1 : length(pargarr)
+        pargarr[i] = Base.pointer(inducing_filaments, i)
+    end
+    #=
+    bsv_V3f cvtx_StraightVortFilArr_ind_dvort(
+        const cvtx_StraightVortFil **array_start,
+        const int num_filaments,
+        const cvtx_Particle *induced_particle);
+    =#
+    ret = ccall(
+            ("cvtx_StraightVortFilArr_ind_dvort", libcvortex), 
+            Vec3f, 
+            (Ref{Ptr{VortexFilament}}, Cint, Ref{VortexParticle}),
+            pargarr, length(inducing_filaments), induced_particle
+            )
+    return Vector{Float32}(ret)
+end
+
+function induced_dvort(
+    filament_start_coords :: Matrix{<:Real},
+    filament_end_coords :: Matrix{<:Real},
+    filament_strengths :: Vector{<:Real},
+    induced_particle_position :: Matrix{<:Real},
+    induced_particle_vorticity :: Matrix{<:Real})
+
+    check_filament_definition(
+        filament_start_coords, filament_end_coords, filament_strengths)
+
+    ni = size(filament_end_coords)[1]
+    np = size(induced_particle_position)[1]
+    inducing_filaments = map(
+        i->VortexFilament(filament_start_coords[i,:], filament_end_coords[i, :], 
+        filament_strengths[i]),
+        1:ni)
+    induced_particles = map(
+        i->VortexParticle(
+            induced_particle_position[i, :], 
+            induced_particle_vorticity[i, :], 0.0),
+        1:np)
+
+    pargarr = Vector{Ptr{VortexFilament}}(undef, ni)
+    for i = 1 : length(pargarr)
+        pargarr[i] = Base.pointer(inducing_filaments, i)
+    end
+    indarg = Vector{Ptr{VortexParticle}}(undef, np)
+    for i = 1 : length(indarg)
+        indarg[i] = Base.pointer(induced_particles, i)
+    end
+    ret = Vector{Vec3f}(undef, length(induced_particles))
+    #=
+    void cvtx_StraightVortFilArr_Arr_ind_dvort(
+        const cvtx_StraightVortFil **array_start,
+        const int num_filaments,
+        const cvtx_Particle **induced_start,
+        const int num_induced,
+        bsv_V3f *result_array);
+    =#
+    ccall(
+        ("cvtx_StraightVortFilArr_Arr_ind_dvort", libcvortex), 
+        Cvoid, 
+        (Ptr{Ptr{VortexFilament}}, Cint, Ptr{Ptr{VortexParticle}}, Cint, 
+            Ptr{Vec3f}),
+        pargarr, ni, indarg, np, ret)
+    return Matrix{Float32}(ret)
+end
+
+"""
+The influence of vortex filaments on normal velocities at points in the
+domain.
+
+A list of i filaments induces a velocity at j measurement points with 
+j corresponding measurement directions. The velocity in these
+measurement directions is returned as a matrix of j by i.
+"""
+function induced_velocity_influence_matrix(
+    filament_start_coords :: Matrix{<:Real},
+    filament_end_coords :: Matrix{<:Real},
+    filament_strengths :: Vector{<:Real},
+    measurement_points :: Matrix{<:Real},
+    measurement_directions :: Matrix{<:Real})
+
+    check_filament_definition(
+        filament_start_coords, filament_end_coords, filament_strengths)
+    @assert(size(measurement_points)[2]==3, "The size of the measurement "*
+        "point vector must be N by 3. Actual size is ", 
+        size(measurement_points), ".")
+    @assert(size(measurement_directions)[2]==3, "The size of the measurement "*
+        "direction vector must be N by 3. Actual size is ", 
+        size(measurement_directions), ".")
+    @assert(size(measurement_directions)==size(measurement_points),
+        "The number of points defined by the measurement points and "*
+        "measurement direction vectors should match, but instead measurement"*
+        " directions define ", size(measurement_directions)[1], " directions "*
+        "and measurement points define ", size(measurement_points), "points.")
+    
+    ni = size(filament_end_coords)[1]
+    np = size(measurement_directions)[1]
+    inducing_filaments = map(
+        i->VortexFilament(filament_start_coords[i,:], filament_end_coords[i, :], 
+        filament_strengths[i]),
+        1:ni)
+        
+    mes_pnts = map(i->Vec3f(measurement_points[i, :]), 1:np)
+    mes_dirs = map(i->Vec3f(measurement_directions[i, :]), 1:np)
+
+    pargarr = Vector{Ptr{VortexFilament}}(undef, length(inducing_filaments))
+    for i = 1 : length(pargarr)
+        pargarr[i] = Base.pointer(inducing_filaments, i)
+    end
+    # Julia is column major, C is row major. 
+    ret = Matrix{Float32}(undef, length(inducing_filaments), 
+        length(measurement_points))
+    #=void cvtx_StraightVortFilArr_inf_mtrx(
+        const cvtx_StraightVortFil **array_start,
+        const int num_filaments,
+        const bsv_V3f *mes_start,
+        const bsv_V3f *dir_start,
+        const int num_mes,
+        float *result_matrix); 
+    =#
+    ccall(
+        ("cvtx_StraightVortFilArr_inf_mtrx", libcvortex), 
+        Cvoid, 
+        (Ptr{Ptr{VortexFilament}}, Cint, Ptr{Vec3f}, Ptr{Vec3f},
+            Cint, Ref{Float32}),
+        pargarr, length(inducing_filaments), mes_pnts, mes_dirs, np, ret)
+    return transpose(ret) # Fix row major -> column major
+end

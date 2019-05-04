@@ -1,8 +1,9 @@
 ##############################################################################
 #
-# build.jl
+# Vec3f.jl
 #
-# Build for cvortex.jl. Downloads correct precompiled binary.
+# Part of CVortex.jl
+# A fixed size vector (needed for C equivalent structure.)
 #
 # Copyright 2019 HJA Bird
 #
@@ -25,27 +26,46 @@
 # IN THE SOFTWARE.
 ##############################################################################
 
-using BinDeps
+#import Base
 
-# version of cvortex package to use
-cvortexver="0.2.0"
+"""
+A 3D Float32 vector.
+"""
+struct Vec3f
+    x :: Float32
+    y :: Float32
+    z :: Float32
+end
 
-# binaries url prefix
-url="https://github.com/hjabird/cvortex/releases/download/$cvortexver/"
+function Vec3f(x::Real, y::Real, z::Real)
+    return Vec3f(Float32(x), Float32(y), Float32(z))
+end
 
-tagfile = "installed_vers"
-if !isfile(tagfile) || readchomp(tagfile) != "$cvortexver $WORD_SIZE"
-    @info("Installing CVortex $cvortexver library...")
-    if Sys.iswindows()
-        run(download_cmd("$url/cvortex_Win_x64_release.dll", "libcvortex.dll"))
-    elseif Sys.isapple()
-        error("Sorry, no apple release of the binaries yet!")
-    elseif Sys.islinux()
-        run(download_cmd("$url/cvortex_Linux_x64_release.so", "libcvortex.so"))
-    end
-    open(tagfile, "w") do f
-        println(f, "$cvortexver")
-    end
-else
-    @info("CVortex $cvortexver is already installed.")
+function Vec3f(a::Vector{<:Real})
+    @assert(length(a)==3)
+    return Vec3f(a[1], a[2], a[3])
+end
+
+function Vector{Vec3f}(a::Matrix{<:Real})
+	@assert(size(a)[2] == 3, "Input matrix is expected to be n rows by 3 "*
+		"columns. Actual input matrix size was " * string(size(a)))
+	len = size(a)[1]
+	v = Vector{Vec3f}(undef, len)
+	for i = 1 : len
+		v[i] = convert(Vec3f, a[i, :])
+	end
+	return v
+end
+
+function Vector{T}(a::Vec3f) where T<:Real
+	return Vector{T}([a.x, a.y, a.z])
+end
+
+function Matrix{T}(a::Vector{Vec3f}) where T <: Real
+	len = length(a)
+	mat = Matrix{T}(undef, len, 3)
+	for i = 1 : len
+		mat[i, :] = [a[i].x, a[i].y, a[i].z]
+	end
+	return mat
 end
