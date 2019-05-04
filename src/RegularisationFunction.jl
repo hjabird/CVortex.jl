@@ -1,6 +1,6 @@
 ##############################################################################
 #
-# VortexFunctions.jl
+# RegularisationFunction.jl
 #
 # Part of cvortex.jl
 # Get vortex regularisation methods.
@@ -27,19 +27,28 @@
 ##############################################################################
 
 """
-	A 3D vortex regularisation fuction
+A 3D vortex regularisation function.
 
-	The method by which the singular nature of a vortex particle is handelled.
-	Generally, this structure is best obtained via VortFunc_*. For example
-	VortFunc_singular(), VortFunc_planetary(), VortFunc_winckelmans() or
-	VortFunc_gaussian().
+The method by which the singular nature of a vortex particle is managed.
+Generally, this structure is best obtained via *_regularisation(). For example
+singular_regularisation(), planetary_regularisation(), 
+gaussian_regularisation() and winckelmans_regulariation().
 
-	Exposure of this allows the use of user kernels in the CPU multithreaded
-	implementations in cvortex. If you're interested in this, looking at the
-	cvortex library and the source of cvortex.jl is suggested to understand
-	the required functions signitures. 
+Exposure of this allows the use of user kernels in the CPU multithreaded
+implementations in cvortex. If you're interested in this, looking at the
+cvortex library and the source of cvortex.jl is suggested to understand
+the required functions signitures. 
+
+# Examples
+```
+using CVortex
+my_regularisation_kernel = singular_regularisation()
+my_regularisation_kernel = winckelmans_regularisation()
+my_regularisation_kernel = planetary_regularisation()
+my_regularisation_kernel = gaussian_regularisation()
+```
 """
-struct VortexFunc
+struct RegularisationFunction
 	g_fn :: Ptr{Cvoid}			# Actually float(*g_fn)(float rho)
 	zeta_fn :: Ptr{Cvoid}		# Actually float(*zeta_fn)(float rho)
 	combined_fn :: Ptr{Cvoid}	# Actually void(*combined_fn)(float rho, float* g, float* zeta)
@@ -48,19 +57,23 @@ struct VortexFunc
 end
 
 #= Functions to to get VortexFunc structures =#
-function VortFunc_singular()
-	ret = ccall(("cvtx_VortFunc_singular", libcvortex), VortexFunc, ())
+function singular_regularisation()
+	ret = ccall(("cvtx_VortFunc_singular", libcvortex), 
+		RegularisationFunction, ())
 	return ret;
 end
-function VortFunc_winckelmans()
-	ret = ccall(("cvtx_VortFunc_winckelmans", libcvortex), VortexFunc, ())
+function winckelmans_regularisation()
+	ret = ccall(("cvtx_VortFunc_winckelmans", libcvortex), 
+		RegularisationFunction, ())
 	return ret;
 end
-function VortFunc_planetary()
-	ret = ccall(("cvtx_VortFunc_planetary", libcvortex), VortexFunc, ())
+function planetary_regularisation()
+	ret = ccall(("cvtx_VortFunc_planetary", libcvortex), 
+		RegularisationFunction, ())
 	return ret;
 end
-function VortFunc_gaussian()
-	ret = ccall(("cvtx_VortFunc_gaussian", libcvortex), VortexFunc, ())
+function gaussian_regularisation()
+	ret = ccall(("cvtx_VortFunc_gaussian", libcvortex), 
+		RegularisationFunction, ())
 	return ret;
 end

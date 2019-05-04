@@ -27,7 +27,9 @@
 ##############################################################################
 
 """
-Representation of a vortex particle.
+	Representation of a vortex particle in CVortex
+
+You do not need this to use the CVortex API.
 
 coord is a particle's position.
 vorticity is the particle's vorticity
@@ -58,20 +60,49 @@ function VortexParticle(coord::Vector{<:Real}, vort::Vector{<:Real})
 end
 
 """
-	Compute the velocity induced in the flow field by vortex particles.
+	particle_induced_velocity(
+		inducing_particle_position :: Vector{<:Real},
+		inducing_particle_vorticity :: Vector{<:Real},
+		measurement_point :: Vector{<:Real},
+		kernel :: RegularisationFunction, regularisation_radius :: Real)
 
-    Arg1:   Position of inducing particles
-    Arg2:   Vorticity of inducing particles
-    Arg3:   Measurement points 
-    Arg4:   Regularisation kernel (VortFunc_winckelmans for example)
-    Arg5:   Regularisation distance
+	particle_induced_velocity(
+		inducing_particle_position :: Matrix{<:Real},
+		inducing_particle_vorticity :: Matrix{<:Real},
+		measurement_point :: Vector{<:Real},
+		kernel :: RegularisationFunction, regularisation_radius :: Real)
+
+	particle_induced_velocity(
+		inducing_particle_position :: Matrix{<:Real},
+		inducing_particle_vorticity :: Matrix{<:Real},
+		measurement_points :: Matrix{<:Real},
+		kernel :: RegularisationFunction, regularisation_radius :: Real)
+
+Compute the velocity induced in the flow field by vortex particles. The
+third (multiple-multiple) method may be GPU accelerated.
+
+# Arguments
+- `inducing_particle_position` : Position of inducing particles
+- `inducing_particle_vorticity` : Vorticity of inducing particles
+- `mesurement_points` : Measurement points 
+- `kernel :: CVortex.RegularisationFunction` : Regularisation function
+(VortFunc_winckelmans for example)
+- `regularisation_radius :: Real` : Regularisation distance
+
+Vector arguments are expected to have length 3. Matrix arguments are
+expected to have size N by 3.
 """
 function particle_induced_velocity(
     inducing_particle_position :: Vector{<:Real},
     inducing_particle_vorticity :: Vector{<:Real},
 	measurement_point :: Vector{<:Real},
-	kernel :: VortexFunc,
+	kernel :: RegularisationFunction,
 	regularisation_radius :: Real)
+	
+	check_particle_definition(inducing_particle_position, 
+		inducing_particle_vorticity)
+	convertable_to_Vec3f_vect(measurement_point, "measurement_points")
+	convertable_to_F32(regularisation_radius, "regularisation_radius")
     
     inducing_particle = VortexParticle(
         inducing_particle_position, 
@@ -88,7 +119,7 @@ function particle_induced_velocity(
 	ret = ccall(
 			("cvtx_Particle_ind_vel", libcvortex), 
 			Vec3f, 
-			(Ref{VortexParticle}, Vec3f, Ref{VortexFunc}, Cfloat),
+			(Ref{VortexParticle}, Vec3f, Ref{RegularisationFunction}, Cfloat),
 			inducing_particle, mes_pnt, kernel, regularisation_radius
 			)
 	return [ret.x, ret.y, ret.z]
@@ -98,13 +129,13 @@ function particle_induced_velocity(
     inducing_particle_position :: Matrix{<:Real},
     inducing_particle_vorticity :: Matrix{<:Real},
 	measurement_point :: Vector{<:Real},
-	kernel :: VortexFunc,
+	kernel :: RegularisationFunction,
 	regularisation_radius :: Real)
     
-    @assert(
-        size(inducing_particle_position)[1]==size(inducing_particle_vorticity)[1], 
-        "size[1] of inducing_particle_position matrix should be the same"*
-		" as size[1] of inducing_particle_vorticity matrix.")
+	check_particle_definition(inducing_particle_position, 
+		inducing_particle_vorticity)
+	convertable_to_Vec3f_vect(measurement_point, "measurement_points")
+	convertable_to_F32(regularisation_radius, "regularisation_radius")
 	
 	np = size(inducing_particle_position)[1]
     inducing_particles = map(
@@ -130,7 +161,8 @@ function particle_induced_velocity(
 	ret = ccall(
 			("cvtx_ParticleArr_ind_vel", libcvortex), 
 			Vec3f, 
-			(Ref{Ptr{VortexParticle}}, Cint, Vec3f, Ref{VortexFunc}, Cfloat),
+			(Ref{Ptr{VortexParticle}}, Cint, Vec3f, 
+				Ref{RegularisationFunction}, Cfloat),
 			pargarr, np, mes_pnt, kernel,	regularisation_radius)
 	return [ret.x, ret.y, ret.z]
 end
@@ -139,15 +171,13 @@ function particle_induced_velocity(
     inducing_particle_position :: Matrix{<:Real},
     inducing_particle_vorticity :: Matrix{<:Real},
 	measurement_points :: Matrix{<:Real},
-	kernel :: VortexFunc,
+	kernel :: RegularisationFunction,
 	regularisation_radius :: Real)
     
-    @assert(
-        size(inducing_particle_position)[1]==size(inducing_particle_vorticity)[1], 
-        "size[1] of inducing_particle_position matrix should be the same"*
-        " as size[1] of inducing_particle_vorticity matrix.")
-    @assert(size(measurement_points)[2]==3, "size(mesurement_points) "*
-		"is expected to be (M,3). Actually ", size(measurement_points), ".")
+	check_particle_definition(inducing_particle_position, 
+		inducing_particle_vorticity)
+	convertable_to_Vec3f_vect(measurement_points, "measurement_points")
+	convertable_to_F32(regularisation_radius, "regularisation_radius")
 		
 	np = size(inducing_particle_position)[1]
 	ni = size(measurement_points)[1]
@@ -177,30 +207,62 @@ function particle_induced_velocity(
 		("cvtx_ParticleArr_Arr_ind_vel", libcvortex), 
 		Cvoid, 
 		(Ptr{Ptr{VortexParticle}}, Cint, Ptr{Vec3f}, 
-			Cint, Ref{Vec3f}, Ref{VortexFunc}, Cfloat),
+			Cint, Ref{Vec3f}, Ref{RegularisationFunction}, Cfloat),
 		pargarr, np, mes_pnt, ni, ret, kernel, regularisation_radius)
 	return Matrix{Float32}(ret)
 end
 
 
 """
-	Rate of change of vorticity induced on vortex particles by element in the 
-	flowfield.
+	particle_induced_dvort(
+		inducing_particle_position :: Vector{<:Real},
+		inducing_particle_vorticity :: Vector{<:Real},
+		induced_particle_position :: Vector{<:Real},
+		induced_particle_vorticity :: Vector{<:Real},
+		kernel :: RegularisationFunction, regularisation_radius :: Real)
 
-    Arg1:   Position of inducing particles
-    Arg2:   Vorticity of inducing particles
-    Arg3:   Position of induced particles
-    Arg4:   Vorticity of induced particles
-    Arg5:   Regularisation kernel (VortFunc_winckelmans for example)
-    Arg6:   Regularisation distance
+	particle_induced_dvort(
+		inducing_particle_position :: Matrix{<:Real},
+		inducing_particle_vorticity :: Matrix{<:Real},
+		induced_particle_position :: Vector{<:Real},
+		induced_particle_vorticity :: Vector{<:Real},
+		kernel :: RegularisationFunction, regularisation_radius :: Real)
+
+	particle_induced_dvort(
+		inducing_particle_position :: Matrix{<:Real},
+		inducing_particle_vorticity :: Matrix{<:Real},
+		induced_particle_position :: Matrix{<:Real},
+		induced_particle_vorticity :: Matrix{<:Real},
+		kernel :: RegularisationFunction, regularisation_radius :: Real)
+
+Rate of change of vorticity induced on vortex particles by element in the 
+flowfield. The third multiple-multiple variant may be GPU accelerated.
+
+# Arguments
+- `inducing_particle_position` : Position of inducing particles
+- `inducing_particle_vorticity` : Vorticity of inducing particles
+- `induced_particle_position` : Position of induced particles
+- `induced_particle_vorticity` : Vorticity of induced particles
+- `kernel :: CVortex.RegularisationFunction` : Regularisation function
+(VortFunc_winckelmans for example)
+- `regularisation_radius :: Real` : Regularisation distance
+
+Vector arguments are expected to have length 3. Matrix arguments are
+expected to have size N by 3.
 """
 function particle_induced_dvort(
     inducing_particle_position :: Vector{<:Real},
     inducing_particle_vorticity :: Vector{<:Real},
     induced_particle_position :: Vector{<:Real},
     induced_particle_vorticity :: Vector{<:Real},
-	kernel :: VortexFunc,
-	regularisation_radius :: T)  where T <: Real
+	kernel :: RegularisationFunction,
+	regularisation_radius :: Real)
+	
+	check_particle_definition(inducing_particle_position, 
+		inducing_particle_vorticity)
+	check_particle_definition(induced_particle_position, 
+		induced_particle_vorticity)
+	convertable_to_F32(regularisation_radius, "regularisation_radius")
 	
     inducing_particle = VortexParticle(
         inducing_particle_position, 
@@ -219,7 +281,8 @@ function particle_induced_dvort(
 	ret = ccall(
 			("cvtx_Particle_ind_dvort", libcvortex), 
 			Vec3f, 
-			(Ref{VortexParticle}, Ref{VortexParticle}, Ref{VortexFunc}, Cfloat),
+			(Ref{VortexParticle}, Ref{VortexParticle}, 
+				Ref{RegularisationFunction}, Cfloat),
 			inducing_particle, induced_particle, kernel, regularisation_radius
 			)
 	return ret
@@ -230,13 +293,14 @@ function particle_induced_dvort(
     inducing_particle_vorticity :: Matrix{<:Real},
     induced_particle_position :: Vector{<:Real},
     induced_particle_vorticity :: Vector{<:Real},
-	kernel :: VortexFunc,
+	kernel :: RegularisationFunction,
 	regularisation_radius :: T)  where T <: Real
 		
-	@assert(
-		size(inducing_particle_position)==size(inducing_particle_vorticity), 
-		"size of inducing_particle_position matrix should be the same"*
-		" as size of inducing_particle_vorticity matrix.")
+	check_particle_definition(inducing_particle_position, 
+		inducing_particle_vorticity)
+	check_particle_definition(induced_particle_position, 
+		induced_particle_vorticity)
+	convertable_to_F32(regularisation_radius, "regularisation_radius")
 	
 	np = size(induced_particle_position)[1]
 	inducing_particles = map(
@@ -265,7 +329,8 @@ function particle_induced_dvort(
 	ret = ccall(
 			("cvtx_ParticleArr_ind_dvort", libcvortex), 
 			Vec3f, 
-			(Ref{Ptr{VortexParticle}}, Cint, Ref{VortexParticle}, Ref{VortexFunc}, Cfloat),
+			(Ref{Ptr{VortexParticle}}, Cint, Ref{VortexParticle}, 
+				Ref{RegularisationFunction}, Cfloat),
 			pargarr, np, induced_particle, kernel, regularisation_radius
 			)
 	return Vector{Float32}(ret)
@@ -276,17 +341,14 @@ function particle_induced_dvort(
     inducing_particle_vorticity :: Matrix{<:Real},
     induced_particle_position :: Matrix{<:Real},
     induced_particle_vorticity :: Matrix{<:Real},
-	kernel :: VortexFunc,
-	regularisation_radius :: T)  where T <: Real
+	kernel :: RegularisationFunction,
+	regularisation_radius :: Real)
 		
-	@assert(
-		size(inducing_particle_position)==size(inducing_particle_vorticity), 
-		"size of inducing_particle_position matrix should be the same"*
-		" as size of inducing_particle_vorticity matrix.")
-	@assert(
-		size(induced_particle_position)==size(induced_particle_vorticity), 
-		"size of induced_particle_position matrix should be the same"*
-		" as size of induced_particle_vorticity matrix.")
+	check_particle_definition(inducing_particle_position, 
+		inducing_particle_vorticity)
+	check_particle_definition(induced_particle_position, 
+		induced_particle_vorticity)
+	convertable_to_F32(regularisation_radius, "regularisation_radius")
 	
 	np = size(inducing_particle_position)[1]
 	ni = size(induced_particle_position)[1]
@@ -324,7 +386,7 @@ function particle_induced_dvort(
 		("cvtx_ParticleArr_Arr_ind_dvort", libcvortex), 
 		Cvoid, 
 		(Ptr{Ptr{VortexParticle}}, Cint, Ptr{Ptr{VortexParticle}}, Cint, 
-			Ptr{Vec3f}, Ref{VortexFunc}, Cfloat),
+			Ptr{Vec3f}, Ref{RegularisationFunction}, Cfloat),
 		pargarr, length(inducing_particles), indarg, length(induced_particles),
 			ret, kernel, regularisation_radius
 		)

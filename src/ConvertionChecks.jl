@@ -27,6 +27,12 @@
 # IN THE SOFTWARE.
 ##############################################################################
 
+"""
+    Gives an assert message if something cannot be converted to something
+    of type or eltype Float32.
+
+Part of CVortex. Not for client use.
+"""
 function convertable_to_F32(arg :: Real, argname :: String)
     @assert(hasmethod(Float32, Tuple{typeof(arg)}),
         "Cannot convert "*argname*" of type ",
@@ -48,18 +54,32 @@ function convertable_to_F32(arg :: Matrix{<:Real}, argname :: String)
     return
 end
 
+"""
+    Gives an assert message if something cannot be converted to a 
+    CVortex.Vec3f or Vector{CVortex.Vec3f}.
+
+Part of CVortex. Not for client use.
+"""
 function convertable_to_Vec3f_vect(arg :: Matrix{<:Real}, argname :: String)
     @assert(size(arg)[2]==3, "The argument "*argname*" should have size "*
         "N by 3, but actually has size ", size(arg), ".")
     convertable_to_F32(arg, argname)
+    return
 end
 
 function convertable_to_Vec3f_vect(arg :: Vector{<:Real}, argname :: String)
     @assert(length(arg)==3, "The argument "*argname*" should have size "*
         "3, but actually has size ", length(arg), ".")
     convertable_to_F32(arg, argname)
+    return
 end
 
+"""
+    Gives an assert message if something cannot be converted to a 
+    CVortex.VortexFilament or Vector{CVortex.VortexFilament}.
+
+Part of CVortex. Not for client use.
+"""
 function check_filament_definition(
     filament_start_coord :: Vector{<:Real},
     filament_end_coord :: Vector{<:Real},
@@ -101,5 +121,35 @@ function check_filament_definition(
     convertable_to_F32(filament_strength, "filament_strength")
     convertable_to_F32(filament_start_coord, "filament_start_coord")
     convertable_to_F32(filament_end_coord, "filament_end_coord")
+    return
+end
+
+"""
+    Gives an assert message if something cannot be converted to a 
+    CVortex.VortexParticle or Vector{CVortex.VortexParticle}.
+
+Part of CVortex. Not for client use.
+"""
+function check_particle_definition(
+    particle_coords :: Matrix{<:Real},
+    particle_vorts  :: Matrix{<:Real})
+
+    convertable_to_Vec3f_vect(particle_coords, "particle_coords")
+    convertable_to_Vec3f_vect(particle_vorts, "particle_vorts")
+    @assert(size(particle_coords)==size(particle_vorts),
+        "The number of particle defined by particle_coords does not "*
+        "match that defined by particle_vorts. particle_coords defines ",
+        size(particle_coords)[1], " particle coordinates whilst "*
+        "particle_vorts defines ", size(particle_vorts), 
+        " particle vorticities.")
+    return
+end
+
+function check_particle_definition(
+    particle_coords :: Vector{<:Real},
+    particle_vorts  :: Vector{<:Real})
+
+    convertable_to_Vec3f_vect(particle_coords, "particle_coords")
+    convertable_to_Vec3f_vect(particle_vorts, "particle_vorts")
     return
 end

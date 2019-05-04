@@ -27,49 +27,56 @@
 ##############################################################################
 
 """
-CVortex contains GPU accelerated method for vortex particles and vortex 
-filaments.
+	CVortex 
+	
+A GPU accelerated vortex particle and vortex filament library.
 """
 module CVortex
 
-export 	VortFunc_singular,
-		VortFunc_gaussian,
-		VortFunc_winckelmans,
-		VortFunc_planetary,
-		particle_induced_velocity,
-		filament_induced_velocity,
-		particle_induced_dvort,
-		number_of_accelerators,
-		number_of_enabled_accelerators,
-		accelerator_name,
-		accelerator_enabled,
-		accelerator_enable,
-		accelerator_disable
+	export 	singular_regularisation,
+			planetary_regularisation,
+			gaussian_regularisation,
+			winckelmans_regularisation,
+			particle_induced_velocity,
+			filament_induced_velocity,
+			particle_induced_dvort,
+			filament_induced_dvort,
+			filament_induced_velocity_influence_matrix,
+			number_of_accelerators,
+			number_of_enabled_accelerators,
+			accelerator_name,
+			accelerator_enabled,
+			accelerator_enable,
+			accelerator_disable,
+			RegularisationFunction
 
-import Libdl: dlopen
-import Base
+	#-------------------------------------------------------------------------
+	# Loading shared library binary (cvortex)
 
-const libcvortex = joinpath(dirname(dirname(@__FILE__)), "deps/libcvortex")
-function __init__()
-	try
-		dlopen(libcvortex)
-	catch
-        error("$(libcvortex) cannot be opened. Possible solutions:",
-			"\n\tRebuild package and restart julia",
-			"\n\tCheck that OpenCL is installed on your PC.\n")
+	import Libdl: dlopen
+
+	const libcvortex = joinpath(
+		dirname(dirname(@__FILE__)), "deps/libcvortex")
+	function __init__()
+		try
+			dlopen(libcvortex)
+		catch
+			error("$(libcvortex) cannot be opened. Possible solutions:",
+				"\n\tRebuild package and restart julia",
+				"\n\tCheck that OpenCL is installed on your PC.\n")
+		end
+		# Inialisation is automatic:
+		ccall(
+			("cvtx_initialise", libcvortex),
+			Cvoid, ())
 	end
-	# Inialisation is automatic:
-	ccall(
-		("cvtx_initialise", libcvortex),
-		Cvoid, ())
-end
 
-#------------------------------------------------------------------------------
-include("ConvertionChecks.jl")
-include("Vec3f.jl")
-include("Accelerators.jl")
-include("VortexFunctions.jl")
-include("VortexParticle.jl")
-include("VortexFilament.jl")
+	#-------------------------------------------------------------------------
+	include("ConvertionChecks.jl")
+	include("Vec3f.jl")
+	include("Accelerators.jl")
+	include("RegularisationFunction.jl")
+	include("VortexParticle.jl")
+	include("VortexFilament.jl")
 
 end #module

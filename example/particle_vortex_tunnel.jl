@@ -32,7 +32,7 @@ let
     n_steps = 40
     dt = 0.1
     # And the regularisation of the particle-particle interaction
-    kernel = VortFunc_winckelmans()
+    kernel = winckelmans_regularisation()
     regdist = max(len / n_rings, 2 * pi * radius / p_per_ring) * 2
 
     total_points = n_rings * p_per_ring
@@ -81,7 +81,7 @@ let
             1000*round(ninter / Float64((tend - tstart).value)),"\t\t\t")
         particle_pos .+= dt .* vels
         particle_vorts .+= dt * dvorts
-        if i % 100 == 0
+        if i % 1 == 0
             save_particles(i)
         end
     end

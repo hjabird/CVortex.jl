@@ -47,12 +47,36 @@ function VortexFilament(
 end
 
 """
-	Compute the velocity induced in the flow field by vortex filaments.
+    filament_induced_velocity(
+        filament_start_coord :: Vector{<:Real},
+        filament_end_coord :: Vector{<:Real},
+        filament_strength :: Real,
+        measurement_point :: Vector{<:Real})
 
-    Arg1:   The start coordinates of vortex filaments
-    Arg2:   The end coordinates of vortex filaments
-    Arg3:   The strength of vortex filaments
-    Arg4:   The measurement points
+    filament_induced_velocity(
+        filament_start_coords :: Matrix{<:Real},
+        filament_end_coords :: Matrix{<:Real},
+        filament_strengths :: Vector{<:Real},
+        measurement_point :: Vector{<:Real})
+
+    filament_induced_velocity(
+        filament_start_coords :: Matrix{<:Real},
+        filament_end_coords :: Matrix{<:Real},
+        filament_strengths :: Vector{<:Real},
+        measurement_points :: Matrix{<:Real})
+
+Compute the velocity induced in the flow field by vortex filaments. The third
+multiple-multiple method may be GPU accelerated.
+
+# Arguments
+- `filament_start_coord` : The start coordinates of vortex filaments
+- `filament_end_coord` : The end coordinates of vortex filaments
+- `filament_strengths` : The vorticity per unit length of vortex filaments.
+- `measurement_points` : The points where induced velocity is measured.
+
+Vector arguments are expected to have length 3. Filament matrix arguments are
+expected to have size N by 3. Measurement matrix arguments are expected to
+have size M by 3. Returns an M by 3 matrix representing velocities.
 """
 function filament_induced_velocity(
     filament_start_coord :: Vector{<:Real},
@@ -159,7 +183,45 @@ function filament_induced_velocity(
     return Matrix{Float32}(ret)
 end
 
-function induced_dvort(
+"""
+    filament_induced_dvort(
+        filament_start_coord :: Vector{<:Real},
+        filament_end_coord :: Vector{<:Real},
+        filament_strength :: Real,
+        induced_particle_position :: Vector{<:Real},
+        induced_particle_vorticity :: Vector{<:Real})
+
+    filament_induced_dvort(
+        filament_start_coords :: Matrix{<:Real},
+        filament_end_coords :: Matrix{<:Real},
+        filament_strengths :: Vector{<:Real},
+        induced_particle_position :: Vector{<:Real},
+        induced_particle_vorticity :: Vector{<:Real})
+
+    filament_induced_dvort(
+        filament_start_coords :: Matrix{<:Real},
+        filament_end_coords :: Matrix{<:Real},
+        filament_strengths :: Vector{<:Real},
+        induced_particle_position :: Matrix{<:Real},
+        induced_particle_vorticity :: Matrix{<:Real})
+
+Compute the rate of change of vorticity of vortex particles induced by 
+vortex filaments. Multiple-multiple method may be GPU accelerated. Modelled
+as singular vortex particles and filaments.
+
+# Arguments
+- `filament_start_coord` : The start coordinates of vortex filaments
+- `filament_end_coord` : The end coordinates of vortex filaments
+- `filament_strengths` : The vorticity per unit length of vortex filaments.
+- `induced_particle_position` : The positions of vortex particles.
+- `induced_particle_vorticity` : The vorticities of vortex particles
+
+Vector arguments are expected to have length 3. Filament matrix arguments are
+expected to have size N by 3. Vortex particles matrix arguments are expected to
+have size M by 3. Returns an M by 3 matrix representing particle vorticity 
+derivatives.
+"""
+function filament_induced_dvort(
     filament_start_coord :: Vector{<:Real},
     filament_end_coord :: Vector{<:Real},
     filament_strength :: Real,
@@ -189,7 +251,7 @@ function induced_dvort(
     return Vector{Float32}(ret)
 end
 
-function induced_dvort(
+function filament_induced_dvort(
     filament_start_coords :: Matrix{<:Real},
     filament_end_coords :: Matrix{<:Real},
     filament_strengths :: Vector{<:Real},
@@ -226,7 +288,7 @@ function induced_dvort(
     return Vector{Float32}(ret)
 end
 
-function induced_dvort(
+function filament_induced_dvort(
     filament_start_coords :: Matrix{<:Real},
     filament_end_coords :: Matrix{<:Real},
     filament_strengths :: Vector{<:Real},
@@ -275,22 +337,35 @@ function induced_dvort(
 end
 
 """
+    induced_velocity_influence_matrix(
+        filament_start_coords :: Matrix{<:Real},
+        filament_end_coords :: Matrix{<:Real},
+        measurement_points :: Matrix{<:Real},
+        measurement_directions :: Matrix{<:Real})
+
 The influence of vortex filaments on normal velocities at points in the
 domain.
 
-A list of i filaments induces a velocity at j measurement points with 
-j corresponding measurement directions. The velocity in these
-measurement directions is returned as a matrix of j by i.
+# Arguments
+- `filament_start_coord` : The start coordinates of vortex filaments. Matrix 
+of size N by 3.
+- `filament_end_coord` : The end coordinates of vortex filaments. Matrix of 
+size N by 3.
+- `measurement_points` : The positions at which induced velocity is evaluated.
+Matrix of size M by 3
+- `measurement_directions` : The directions for which velocity compents are 
+computed. Matrix of size M by 3
+
+Returns a Matrix{Float32} with size (M, N).
 """
-function induced_velocity_influence_matrix(
+function filament_induced_velocity_influence_matrix(
     filament_start_coords :: Matrix{<:Real},
     filament_end_coords :: Matrix{<:Real},
-    filament_strengths :: Vector{<:Real},
     measurement_points :: Matrix{<:Real},
     measurement_directions :: Matrix{<:Real})
 
     check_filament_definition(
-        filament_start_coords, filament_end_coords, filament_strengths)
+        filament_start_coords, filament_end_coords)
     @assert(size(measurement_points)[2]==3, "The size of the measurement "*
         "point vector must be N by 3. Actual size is ", 
         size(measurement_points), ".")
@@ -307,7 +382,7 @@ function induced_velocity_influence_matrix(
     np = size(measurement_directions)[1]
     inducing_filaments = map(
         i->VortexFilament(filament_start_coords[i,:], filament_end_coords[i, :], 
-        filament_strengths[i]),
+        1.0),
         1:ni)
         
     mes_pnts = map(i->Vec3f(measurement_points[i, :]), 1:np)
