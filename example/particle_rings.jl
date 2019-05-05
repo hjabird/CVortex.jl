@@ -5,7 +5,8 @@
 # A demo of using vortex particle ring interaction based on the work 
 # Winckelmans and Leonard, J_Comp_Phys, 1993, Contributions to the 
 # Vortex Particle Methods for the Computation of Three-Dimensional 
-# Incompressible Unsteady Flows
+# Incompressible Unsteady Flows. This should produce something like 
+# figure 5.
 #
 ##############################################################################
 
@@ -24,40 +25,42 @@ let
         println(i, ":\t", accelerator_name(i))
     end
 
-    n_steps = 800
+    n_steps = 1110
     dt = 0.01
     regdist = 0.2
     kernel = winckelmans_regularisation()
 
-    function make_ring(section_radius::Real, radius::Real, vorticity::Real,
-        circ_particles::Int, layers::Int)
+    function make_ring(r_l::Real, radius::Real, vorticity::Real,
+        circ_particles::Int, layers::Int; str=ones(10))
         local theta_r = map(i->2 * pi * (i-.5) / circ_particles, 1:circ_particles)
         local particles = zeros(length(theta_r), 3)
         local vorts = zeros(length(theta_r), 3)
-        local r_l = section_radius/layers
+        local section_radius = (2 * layers - 1) * r_l
         local cell_area = pi * r_l^2
         local cross_section_area = pi * section_radius^2
-        local cell_vpl = vorticity * cell_area * pi * radius^2 / 
-                (cross_section_area * circ_particles)
-        function sub_ring(theta_s, rc)
+
+        local areas = vcat([cell_area], map(i->pi*r_l^2*((2*i + 1)^2-(2*i-1)^2), 1:layers-1))#
+        local vortadj = vorticity / sum(areas .* str[1:length(areas)])
+        local cell_vpln = vortadj * cell_area * 2 * pi * radius / circ_particles
+
+        function sub_ring(theta_s, rc, str)
             local p=mapreduce(
                 theta->[(radius+rc*cos(theta_s))*cos(theta), (radius+rc*cos(theta_s))*sin(theta), rc*sin(theta_s)]', 
                 vcat, theta_r)
-            local v=mapreduce(theta->cell_vpl * [-sin(theta), cos(theta), 0]', 
+            local v=mapreduce(theta->str * [-sin(theta), cos(theta), 0]', 
                 vcat, theta_r)
             return p, v
         end
 
         # Ring centre.
-        local particles, vorts = sub_ring(0., 0.)
-        println("Made centre")
+        local particles, vorts = sub_ring(0., 0., cell_vpln * str[1])
         # Outer layers
         for i = 1 : layers-1
             r_c = r_l * (1 + 12*i^2)/(6 * i)
             nr = 8 * i
             theta_s = map(j->2 * pi * j / nr, 1:nr)
             for theta in theta_s
-                ps, vs = sub_ring(theta, r_c)
+                ps, vs = sub_ring(theta, r_c, cell_vpln * str[i + 1])
                 particles=vcat(particles, ps)
                 vorts=vcat(vorts, vs)
             end
@@ -81,17 +84,17 @@ let
         return points, vorts
     end
 
-    particle_pos1, vorticities1 = make_ring(0.2, 1., -1., 64, 4)
+    particle_pos1, vorticities1 = make_ring(0.08, 1., -1., 44, 3; str=[1., 0.54, 0.16])
     particle_pos2 = deepcopy(particle_pos1)
     vorticities2 = deepcopy(vorticities1)
-    particle_pos1, vorticities1 = rotate(particle_pos1, vorticities1, deg2rad(15), [0., 0., 0.])
-    particle_pos1 = translate(particle_pos1, [0., -1.35, 0.])
-    particle_pos2, vorticities2 = rotate(particle_pos2, vorticities2, deg2rad(-15), [0., 0., 0.])
-    particle_pos2 = translate(particle_pos2, [0., 1.35, 0.])
+    particle_pos1, vorticities1 = rotate(particle_pos1, vorticities1, deg2rad(10), [0., 0., 0.])
+    particle_pos1 = translate(particle_pos1, [0., -1.5, 0.])
+    particle_pos2, vorticities2 = rotate(particle_pos2, vorticities2, deg2rad(-10), [0., 0., 0.])
+    particle_pos2 = translate(particle_pos2, [0., 1.5, 0.])
 
     particle_pos = vcat(particle_pos1, particle_pos2)
     particle_vorts = vcat(vorticities1, vorticities2)
-    
+
     total_particles = size(particle_pos)[1]
     println("Total of ", total_particles, " particles.")
 
@@ -103,6 +106,7 @@ let
             1:size(particle_pos)[1])
         vtkfile = WriteVTK.vtk_grid("particles"*string(step), 
             particle_pos', cells)
+        WriteVTK.vtk_point_data(vtkfile, particle_vorts', "Vorticity")
         WriteVTK.vtk_save(vtkfile)
     end
 
