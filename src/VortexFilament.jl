@@ -394,7 +394,7 @@ function filament_induced_velocity_influence_matrix(
     end
     # Julia is column major, C is row major. 
     ret = Matrix{Float32}(undef, length(inducing_filaments), 
-        length(measurement_points))
+        length(mes_pnts))
     #=void cvtx_StraightVortFilArr_inf_mtrx(
         const cvtx_StraightVortFil **array_start,
         const int num_filaments,
@@ -407,7 +407,7 @@ function filament_induced_velocity_influence_matrix(
         ("cvtx_StraightVortFilArr_inf_mtrx", libcvortex), 
         Cvoid, 
         (Ptr{Ptr{VortexFilament}}, Cint, Ptr{Vec3f}, Ptr{Vec3f},
-            Cint, Ref{Float32}),
+            Cint, Ptr{Float32}),
         pargarr, length(inducing_filaments), mes_pnts, mes_dirs, np, ret)
     return transpose(ret) # Fix row major -> column major
 end
