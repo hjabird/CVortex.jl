@@ -9,8 +9,8 @@
 
 using CVortex
 using Dates
-using Plots
-plotly()
+#using Plots
+#plotly()
 
 let
     # We can print information about the system.
@@ -24,7 +24,7 @@ let
     end
 
     # We'll only start new runs for a certain amount of time:
-    maxtime = 5
+    maxtime = 30
     println("Maxtime is ", maxtime, " seconds. The program will finish
         what its working on when it runs out of time.")
     nparticles = sort(vcat(map(i->2^i, 6:30), [1023]))
@@ -42,16 +42,14 @@ let
         ninter = nparticles[i] ^2
         particle_pos = rand(nparticles[i], 3)
         particle_vorts = rand(nparticles[i], 3)
-        tstart = now()
-        vels = particle_induced_velocity(particle_pos, particle_vorts, 
+        vels, t1,~,~,~ = @timed particle_induced_velocity(particle_pos, particle_vorts, 
             particle_pos, kernel, 0.01)
-        dvorts = particle_induced_dvort(particle_pos, particle_vorts, 
+        dvorts, t2,~,~,~ = @timed particle_induced_dvort(particle_pos, particle_vorts, 
             particle_pos, particle_vorts, kernel, 0.01)
-        tend = now()
-        wallclocktime = round(Float64((tend - tstart).value))/1000
+        wallclocktime = t1 + t2
         if wallclocktime > 0
             push!(r_particles, nparticles[i])
-            push!(r_times, round(Float64((tend - tstart).value))/1000)
+            push!(r_times, t1 + t2)
         end
         i += 1
     end
