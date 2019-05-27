@@ -115,9 +115,9 @@ function check_filament_definition(
     @assert(size(filament_start_coord)[1]==length(filament_strength),
         "The length of the filament strength vector does not match that "*
         "of the coordinate matrices. The filament coordinate matrices define"*
-        " geometries for ", size(filament_start_coord)[1], " filaments ",
-        "whilst the strength vector has length ", length(filament_strength),
-        ".")
+        " geometries for "* string(size(filament_start_coord)[1]) * 
+        " filaments whilst the strength vector has length " * 
+        string(length(filament_strength)) * ".")
     convertable_to_F32(filament_strength, "filament_strength")
     convertable_to_F32(filament_start_coord, "filament_start_coord")
     convertable_to_F32(filament_end_coord, "filament_end_coord")
