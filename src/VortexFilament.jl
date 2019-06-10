@@ -94,12 +94,12 @@ function filament_induced_velocity(
 
     ret = Vec3f(0., 0., 0.)
     #=
-    bsv_V3f cvtx_StraightVortFil_ind_vel(
-        const cvtx_StraightVortFil *self,
+    CVTX_EXPORT bsv_V3f cvtx_F3D_S2S_vel(
+        const cvtx_F3D *self,
         const bsv_V3f mes_point);
     =#
     ret = ccall(
-            ("cvtx_StraightVortexFilament_ind_vel", libcvortex), 
+            ("cvtx_F3D_S2S_vel", libcvortex), 
             Vec3f, 
             (Ref{VortexFilament}, Vec3f),
             inducing_filament, mes_pnt)
@@ -129,13 +129,12 @@ function filament_induced_velocity(
     end
     ret = Vec3f(0., 0., 0.)
     #=
-    bsv_V3f cvtx_StraightVortFilArr_ind_vel(
-        const cvtx_StraightVortFil **array_start,
+    CVTX_EXPORT bsv_V3f cvtx_F3D_M2S_vel(
+        const cvtx_F3D **array_start,
         const int num_filaments,
-        const bsv_V3f mes_point)
     =#		
     ret = ccall(
-            ("cvtx_StraightVortFilArr_ind_vel", libcvortex), 
+            ("cvtx_F3D_M2S_vel", libcvortex), 
             Vec3f, 
             (Ref{Ptr{VortexFilament}}, Cint, Vec3f),
             pargarr, ni, mes_pnt
@@ -167,15 +166,15 @@ function filament_induced_velocity(
     end
     ret = Vector{Vec3f}(undef, np)
     #=
-    void cvtx_StraightVortFilArr_Arr_ind_vel(
-        const cvtx_StraightVortFil **array_start,
+    CVTX_EXPORT void cvtx_F3D_M2M_vel(
+        const cvtx_F3D **array_start,
         const int num_filaments,
         const bsv_V3f *mes_start,
         const int num_mes,
-        bsv_V3f *result_array)
+        bsv_V3f *result_array);
     =#	
     ccall(
-        ("cvtx_StraightVortFilArr_Arr_ind_vel", libcvortex), 
+        ("cvtx_F3D_M2M_vel", libcvortex), 
         Cvoid, 
         (Ptr{Ptr{VortexFilament}}, Cint, Ptr{Vec3f}, 
             Cint, Ref{Vec3f}),
@@ -238,12 +237,12 @@ function filament_induced_dvort(
 
     ret = Vec3f(0., 0., 0.)
     #=
-    bsv_V3f cvtx_StraightVortFil_ind_dvort(
-        const cvtx_StraightVortFil *self,
-        const cvtx_Particle *induced_particle);
+    CVTX_EXPORT bsv_V3f cvtx_F3D_S2S_dvort(
+        const cvtx_F3D *self,
+        const cvtx_P3D *induced_particle);
     =#
     ret = ccall(
-            ("cvtx_StraightVortFil_ind_dvort", libcvortex), 
+            ("cvtx_F3D_S2S_dvort", libcvortex), 
             Vec3f, 
             (Ref{VortexFilament}, Ref{VortexParticle}),
             inducing_filament, induced_particle
@@ -274,13 +273,13 @@ function filament_induced_dvort(
         pargarr[i] = Base.pointer(inducing_filaments, i)
     end
     #=
-    bsv_V3f cvtx_StraightVortFilArr_ind_dvort(
-        const cvtx_StraightVortFil **array_start,
+    CVTX_EXPORT bsv_V3f cvtx_F3D_M2S_dvort(
+        const cvtx_F3D **array_start,
         const int num_filaments,
-        const cvtx_Particle *induced_particle);
+        const cvtx_P3D *induced_particle);
     =#
     ret = ccall(
-            ("cvtx_StraightVortFilArr_ind_dvort", libcvortex), 
+            ("cvtx_F3D_M2S_dvort", libcvortex), 
             Vec3f, 
             (Ref{Ptr{VortexFilament}}, Cint, Ref{VortexParticle}),
             pargarr, length(inducing_filaments), induced_particle
@@ -320,15 +319,15 @@ function filament_induced_dvort(
     end
     ret = Vector{Vec3f}(undef, length(induced_particles))
     #=
-    void cvtx_StraightVortFilArr_Arr_ind_dvort(
-        const cvtx_StraightVortFil **array_start,
+    CVTX_EXPORT void cvtx_F3D_M2M_dvort(
+        const cvtx_F3D **array_start,
         const int num_filaments,
-        const cvtx_Particle **induced_start,
+        const cvtx_P3D **induced_start,
         const int num_induced,
         bsv_V3f *result_array);
     =#
     ccall(
-        ("cvtx_StraightVortFilArr_Arr_ind_dvort", libcvortex), 
+        ("cvtx_F3D_M2M_dvort", libcvortex), 
         Cvoid, 
         (Ptr{Ptr{VortexFilament}}, Cint, Ptr{Ptr{VortexParticle}}, Cint, 
             Ptr{Vec3f}),
@@ -395,16 +394,17 @@ function filament_induced_velocity_influence_matrix(
     # Julia is column major, C is row major. 
     ret = Matrix{Float32}(undef, length(inducing_filaments), 
         length(mes_pnts))
-    #=void cvtx_StraightVortFilArr_inf_mtrx(
-        const cvtx_StraightVortFil **array_start,
+    #=
+    CVTX_EXPORT void cvtx_F3D_inf_mtrx(
+        const cvtx_F3D **array_start,
         const int num_filaments,
         const bsv_V3f *mes_start,
         const bsv_V3f *dir_start,
         const int num_mes,
-        float *result_matrix); 
+        float *result_matrix);
     =#
     ccall(
-        ("cvtx_StraightVortFilArr_inf_mtrx", libcvortex), 
+        ("cvtx_F3D_inf_mtrx", libcvortex), 
         Cvoid, 
         (Ptr{Ptr{VortexFilament}}, Cint, Ptr{Vec3f}, Ptr{Vec3f},
             Cint, Ptr{Float32}),

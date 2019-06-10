@@ -1,9 +1,9 @@
 ##############################################################################
 #
-# VortexParticle.jl
+# VortexParticle3D.jl
 #
 # Part of CVortex.jl
-# Representation of a vortex particle.
+# Representation of a 3D vortex particle.
 #
 # Copyright 2019 HJA Bird
 #
@@ -110,14 +110,14 @@ function particle_induced_velocity(
     mes_pnt = Vec3f(measurement_point)
 	ret = Vec3f(0., 0., 0.)
 	#=
-	cvtx_Vec3f cvtx_Particle_ind_vel(
-		const cvtx_Particle *self, 
-		const cvtx_Vec3f mes_point, 
+	CVTX_EXPORT bsv_V3f cvtx_P3D_S2S_vel(
+		const cvtx_P3D *self,
+		const bsv_V3f mes_point,
 		const cvtx_VortFunc *kernel,
 		float regularisation_radius);
 	=#
 	ret = ccall(
-			("cvtx_Particle_ind_vel", libcvortex), 
+			("cvtx_P3D_S2S_vel", libcvortex), 
 			Vec3f, 
 			(Ref{VortexParticle}, Vec3f, Ref{RegularisationFunction}, Cfloat),
 			inducing_particle, mes_pnt, kernel, regularisation_radius
@@ -151,15 +151,15 @@ function particle_induced_velocity(
 	end
 	ret =Vec3f(0., 0., 0.)
 	#=
-	cvtx_Vec3f cvtx_ParticleArr_ind_vel(
-		const cvtx_Particle **array_start,
+	CVTX_EXPORT bsv_V3f cvtx_P3D_M2S_vel(
+		const cvtx_P3D **array_start,
 		const int num_particles,
-		const cvtx_Vec3f mes_point,
+		const bsv_V3f mes_point,
 		const cvtx_VortFunc *kernel,
 		float regularisation_radius);
 	=#		
 	ret = ccall(
-			("cvtx_ParticleArr_ind_vel", libcvortex), 
+			("cvtx_P3D_M2S_vel", libcvortex), 
 			Vec3f, 
 			(Ref{Ptr{VortexParticle}}, Cint, Vec3f, 
 				Ref{RegularisationFunction}, Cfloat),
@@ -194,17 +194,17 @@ function particle_induced_velocity(
 	end
 	ret = Vector{Vec3f}(undef, ni)
 	#=
-	void cvtx_ParticleArr_Arr_ind_vel(
-		const cvtx_Particle **array_start,
+	CVTX_EXPORT void cvtx_P3D_M2M_vel(
+		const cvtx_P3D **array_start,
 		const int num_particles,
-		const cvtx_Vec3f *mes_start,
+		const bsv_V3f *mes_start,
 		const int num_mes,
-		cvtx_Vec3f *result_array,
+		bsv_V3f *result_array,
 		const cvtx_VortFunc *kernel,
 		float regularisation_radius);
 	=#	
 	ccall(
-		("cvtx_ParticleArr_Arr_ind_vel", libcvortex), 
+		("cvtx_P3D_M2M_vel", libcvortex), 
 		Cvoid, 
 		(Ptr{Ptr{VortexParticle}}, Cint, Ptr{Vec3f}, 
 			Cint, Ref{Vec3f}, Ref{RegularisationFunction}, Cfloat),
@@ -272,14 +272,14 @@ function particle_induced_dvort(
 		induced_particle_vorticity, 0.0)
 	ret = Vec3f(0., 0., 0.)
 	#=
-	cvtx_Vec3f cvtx_Particle_ind_dvort(
-		const cvtx_Particle *self, 
-		const cvtx_Particle *induced_particle,
+	CVTX_EXPORT bsv_V3f cvtx_P3D_S2S_dvort(
+		const cvtx_P3D *self,
+		const cvtx_P3D *induced_particle,
 		const cvtx_VortFunc *kernel,
 		float regularisation_radius);
 	=#
 	ret = ccall(
-			("cvtx_Particle_ind_dvort", libcvortex), 
+			("cvtx_P3D_S2S_dvort", libcvortex), 
 			Vec3f, 
 			(Ref{VortexParticle}, Ref{VortexParticle}, 
 				Ref{RegularisationFunction}, Cfloat),
@@ -319,15 +319,15 @@ function particle_induced_dvort(
 	end
 	ret = Vec3f(0., 0., 0.)
 	#=
-	cvtx_Vec3f cvtx_ParticleArr_ind_dvort(
-		const cvtx_Particle **array_start,
+	CVTX_EXPORT bsv_V3f cvtx_P3D_M2S_dvort(
+		const cvtx_P3D **array_start,
 		const int num_particles,
-		const cvtx_Particle *induced_particle,
+		const cvtx_P3D *induced_particle,
 		const cvtx_VortFunc *kernel,
-		float regularisation_radius)
+		float regularisation_radius);
 	=#
 	ret = ccall(
-			("cvtx_ParticleArr_ind_dvort", libcvortex), 
+			("cvtx_P3D_M2S_dvort", libcvortex), 
 			Vec3f, 
 			(Ref{Ptr{VortexParticle}}, Cint, Ref{VortexParticle}, 
 				Ref{RegularisationFunction}, Cfloat),
@@ -373,17 +373,17 @@ function particle_induced_dvort(
 	end
 	ret = Vector{Vec3f}(undef, ni)
 	#=
-	void cvtx_ParticleArr_Arr_ind_dvort(
-		const cvtx_Particle **array_start,
+	CVTX_EXPORT void cvtx_P3D_M2M_dvort(
+		const cvtx_P3D **array_start,
 		const int num_particles,
-		const cvtx_Particle **induced_start,
+		const cvtx_P3D **induced_start,
 		const int num_induced,
-		cvtx_Vec3f *result_array,
+		bsv_V3f *result_array,
 		const cvtx_VortFunc *kernel,
-		float regularisation_radius)
+		float regularisation_radius);
 	=#
 	ccall(
-		("cvtx_ParticleArr_Arr_ind_dvort", libcvortex), 
+		("cvtx_P3D_M2M_dvort", libcvortex), 
 		Cvoid, 
 		(Ptr{Ptr{VortexParticle}}, Cint, Ptr{Ptr{VortexParticle}}, Cint, 
 			Ptr{Vec3f}, Ref{RegularisationFunction}, Cfloat),

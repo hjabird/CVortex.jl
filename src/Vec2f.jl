@@ -1,6 +1,6 @@
 ##############################################################################
 #
-# Vec3f.jl
+# Vec2f.jl
 #
 # Part of CVortex.jl
 # A fixed size vector (needed for C equivalent structure.)
@@ -27,43 +27,42 @@
 ##############################################################################
 
 """
-A 3D Float32 vector.
+A 2D Float32 vector.
 """
-struct Vec3f
+struct Vec2f
     x :: Float32
     y :: Float32
-    z :: Float32
 end
 
-function Vec3f(x::Real, y::Real, z::Real)
-    return Vec3f(Float32(x), Float32(y), Float32(z))
+function Vec2f(x::Real, y::Real)
+    return Vec2f(Float32(x), Float32(y))
 end
 
-function Vec3f(a::Vector{<:Real})
-    @assert(length(a)==3)
-    return Vec3f(a[1], a[2], a[3])
+function Vec2f(a::Vector{<:Real})
+    @assert(length(a)==2)
+    return Vec2f(a[1], a[2])
 end
 
-function Vector{Vec3f}(a::Matrix{<:Real})
-	@assert(size(a)[2] == 3, "Input matrix is expected to be n rows by 3 "*
+function Vector{Vec2f}(a::Matrix{<:Real})
+	@assert(size(a)[2] == 2, "Input matrix is expected to be n rows by 2 "*
 		"columns. Actual input matrix size was " * string(size(a)))
 	len = size(a)[1]
-	v = Vector{Vec3f}(undef, len)
+	v = Vector{Vec2f}(undef, len)
 	for i = 1 : len
-		v[i] = convert(Vec3f, a[i, :])
+		v[i] = convert(Vec2f, a[i, :])
 	end
 	return v
 end
 
-function Vector{T}(a::Vec3f) where T<:Real
-	return Vector{T}([a.x, a.y, a.z])
+function Vector{T}(a::Vec2f) where T<:Real
+	return Vector{T}([a.x, a.y])
 end
 
-function Matrix{T}(a::Vector{Vec3f}) where T <: Real
+function Matrix{T}(a::Vector{Vec2f}) where T <: Real
 	len = length(a)
-	mat = Matrix{T}(undef, len, 3)
+	mat = Matrix{T}(undef, len, 2)
 	for i = 1 : len
-		mat[i, :] = [a[i].x, a[i].y, a[i].z]
+		mat[i, :] = [a[i].x, a[i].y]
 	end
 	return mat
 end
