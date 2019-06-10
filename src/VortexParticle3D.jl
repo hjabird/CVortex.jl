@@ -27,7 +27,7 @@
 ##############################################################################
 
 """
-	Representation of a vortex particle in CVortex
+	Representation of a 3D vortex particle in CVortex
 
 You do not need this to use the CVortex API.
 
@@ -37,26 +37,26 @@ volume is the volume of the particle. This is only important for
 viscous vortex particle strength exchange methods (not included in this
 wrapper)
 """
-struct VortexParticle
+struct VortexParticle3D
     coord :: Vec3f
     vorticity :: Vec3f
     volume :: Float32
 end
 
-function VortexParticle(coord::Vec3f, vort::Vec3f)
-    return VortexParticle(coord, vort, 0.0)
+function VortexParticle3D(coord::Vec3f, vort::Vec3f)
+    return VortexParticle3D(coord, vort, 0.0)
 end
 
-function VortexParticle(coord::Vector{<:Real}, vort::Vector{<:Real}, vol::Real)
+function VortexParticle3D(coord::Vector{<:Real}, vort::Vector{<:Real}, vol::Real)
 	@assert(length(coord)==3)
 	@assert(length(vort)==3)
-    return VortexParticle(Vec3f(coord), Vec3f(vort), vol)
+    return VortexParticle3D(Vec3f(coord), Vec3f(vort), vol)
 end
 
-function VortexParticle(coord::Vector{<:Real}, vort::Vector{<:Real})
+function VortexParticle3D(coord::Vector{<:Real}, vort::Vector{<:Real})
 	@assert(length(coord)==3)
 	@assert(length(vort)==3)
-    return VortexParticle(coord, vort, 0.0)
+    return VortexParticle3D(coord, vort, 0.0)
 end
 
 """
@@ -104,7 +104,7 @@ function particle_induced_velocity(
 	convertable_to_Vec3f_vect(measurement_point, "measurement_points")
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
     
-    inducing_particle = VortexParticle(
+    inducing_particle = VortexParticle3D(
         inducing_particle_position, 
         inducing_particle_vorticity, 0.0)
     mes_pnt = Vec3f(measurement_point)
@@ -119,7 +119,7 @@ function particle_induced_velocity(
 	ret = ccall(
 			("cvtx_P3D_S2S_vel", libcvortex), 
 			Vec3f, 
-			(Ref{VortexParticle}, Vec3f, Ref{RegularisationFunction}, Cfloat),
+			(Ref{VortexParticle3D}, Vec3f, Ref{RegularisationFunction}, Cfloat),
 			inducing_particle, mes_pnt, kernel, regularisation_radius
 			)
 	return [ret.x, ret.y, ret.z]
@@ -139,13 +139,13 @@ function particle_induced_velocity(
 	
 	np = size(inducing_particle_position)[1]
     inducing_particles = map(
-        i->VortexParticle(
+        i->VortexParticle3D(
             inducing_particle_position[i, :], 
             inducing_particle_vorticity[i, :], 0.0),
         1:np)
     mes_pnt = Vec3f(measurement_point)
 	
-	pargarr = Vector{Ptr{VortexParticle}}(undef, length(inducing_particles))
+	pargarr = Vector{Ptr{VortexParticle3D}}(undef, length(inducing_particles))
 	for i = 1 : length(pargarr)
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
@@ -161,7 +161,7 @@ function particle_induced_velocity(
 	ret = ccall(
 			("cvtx_P3D_M2S_vel", libcvortex), 
 			Vec3f, 
-			(Ref{Ptr{VortexParticle}}, Cint, Vec3f, 
+			(Ref{Ptr{VortexParticle3D}}, Cint, Vec3f, 
 				Ref{RegularisationFunction}, Cfloat),
 			pargarr, np, mes_pnt, kernel,	regularisation_radius)
 	return [ret.x, ret.y, ret.z]
@@ -182,13 +182,13 @@ function particle_induced_velocity(
 	np = size(inducing_particle_position)[1]
 	ni = size(measurement_points)[1]
     inducing_particles = map(
-        i->VortexParticle(
+        i->VortexParticle3D(
             inducing_particle_position[i, :], 
             inducing_particle_vorticity[i, :], 0.0),
         1:np)
     mes_pnt = map(i->Vec3f(measurement_points[i,:]), 1:ni)
 	
-	pargarr = Vector{Ptr{VortexParticle}}(undef, np)
+	pargarr = Vector{Ptr{VortexParticle3D}}(undef, np)
 	for i = 1 : length(pargarr)
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
@@ -206,7 +206,7 @@ function particle_induced_velocity(
 	ccall(
 		("cvtx_P3D_M2M_vel", libcvortex), 
 		Cvoid, 
-		(Ptr{Ptr{VortexParticle}}, Cint, Ptr{Vec3f}, 
+		(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{Vec3f}, 
 			Cint, Ref{Vec3f}, Ref{RegularisationFunction}, Cfloat),
 		pargarr, np, mes_pnt, ni, ret, kernel, regularisation_radius)
 	return Matrix{Float32}(ret)
@@ -264,10 +264,10 @@ function particle_induced_dvort(
 		induced_particle_vorticity)
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
 	
-    inducing_particle = VortexParticle(
+    inducing_particle = VortexParticle3D(
         inducing_particle_position, 
         inducing_particle_vorticity, 0.0)
-	induced_particle = VortexParticle(
+	induced_particle = VortexParticle3D(
 		induced_particle_position, 
 		induced_particle_vorticity, 0.0)
 	ret = Vec3f(0., 0., 0.)
@@ -281,7 +281,7 @@ function particle_induced_dvort(
 	ret = ccall(
 			("cvtx_P3D_S2S_dvort", libcvortex), 
 			Vec3f, 
-			(Ref{VortexParticle}, Ref{VortexParticle}, 
+			(Ref{VortexParticle3D}, Ref{VortexParticle3D}, 
 				Ref{RegularisationFunction}, Cfloat),
 			inducing_particle, induced_particle, kernel, regularisation_radius
 			)
@@ -304,16 +304,16 @@ function particle_induced_dvort(
 	
 	np = size(induced_particle_position)[1]
 	inducing_particles = map(
-		i->VortexParticle(
+		i->VortexParticle3D(
 			inducing_particle_position[i, :], 
 			inducing_particle_vorticity[i, :], 0.0),
 		1:np)
-	induced_particle = VortexParticle(
+	induced_particle = VortexParticle3D(
 		induced_particle_position, 
 		induced_particle_vorticity, 0.0)
 
 	
-	pargarr = Vector{Ptr{VortexParticle}}(undef, np)
+	pargarr = Vector{Ptr{VortexParticle3D}}(undef, np)
 	for i = 1 : length(pargarr)
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
@@ -329,7 +329,7 @@ function particle_induced_dvort(
 	ret = ccall(
 			("cvtx_P3D_M2S_dvort", libcvortex), 
 			Vec3f, 
-			(Ref{Ptr{VortexParticle}}, Cint, Ref{VortexParticle}, 
+			(Ref{Ptr{VortexParticle3D}}, Cint, Ref{VortexParticle3D}, 
 				Ref{RegularisationFunction}, Cfloat),
 			pargarr, np, induced_particle, kernel, regularisation_radius
 			)
@@ -353,21 +353,21 @@ function particle_induced_dvort(
 	np = size(inducing_particle_position)[1]
 	ni = size(induced_particle_position)[1]
 	inducing_particles = map(
-		i->VortexParticle(
+		i->VortexParticle3D(
 			inducing_particle_position[i, :], 
 			inducing_particle_vorticity[i, :], 0.0),
 		1:np)
 	induced_particles = map(
-		i->VortexParticle(
+		i->VortexParticle3D(
 			inducing_particle_position[i, :], 
 			inducing_particle_vorticity[i, :], 0.0),
 		1:ni)
 
-	pargarr = Vector{Ptr{VortexParticle}}(undef, length(inducing_particles))
+	pargarr = Vector{Ptr{VortexParticle3D}}(undef, length(inducing_particles))
 	for i = 1 : length(pargarr)
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
-	indarg = Vector{Ptr{VortexParticle}}(undef, ni)
+	indarg = Vector{Ptr{VortexParticle3D}}(undef, ni)
 	for i = 1 : length(indarg)
 		indarg[i] = Base.pointer(induced_particles, i)
 	end
@@ -385,7 +385,7 @@ function particle_induced_dvort(
 	ccall(
 		("cvtx_P3D_M2M_dvort", libcvortex), 
 		Cvoid, 
-		(Ptr{Ptr{VortexParticle}}, Cint, Ptr{Ptr{VortexParticle}}, Cint, 
+		(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{Ptr{VortexParticle3D}}, Cint, 
 			Ptr{Vec3f}, Ref{RegularisationFunction}, Cfloat),
 		pargarr, length(inducing_particles), indarg, length(induced_particles),
 			ret, kernel, regularisation_radius

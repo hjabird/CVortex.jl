@@ -232,7 +232,7 @@ function filament_induced_dvort(
 
     inducing_filament = VortexFilament(filament_start_coord, filament_end_coord, 
         filament_strength)
-    induced_particle = VortexParticle(
+    induced_particle = VortexParticle3D(
         induced_particle_position, induced_particle_vorticity, 0.0)
 
     ret = Vec3f(0., 0., 0.)
@@ -244,7 +244,7 @@ function filament_induced_dvort(
     ret = ccall(
             ("cvtx_F3D_S2S_dvort", libcvortex), 
             Vec3f, 
-            (Ref{VortexFilament}, Ref{VortexParticle}),
+            (Ref{VortexFilament}, Ref{VortexParticle3D}),
             inducing_filament, induced_particle
             )
     return Vector{Float32}(ret)
@@ -265,7 +265,7 @@ function filament_induced_dvort(
         i->VortexFilament(filament_start_coords[i,:], filament_end_coords[i, :], 
         filament_strengths[i]),
         1:ni)
-    induced_particle = VortexParticle(
+    induced_particle = VortexParticle3D(
         induced_particle_position, induced_particle_vorticity, 0.0)
 
     pargarr = Vector{Ptr{VortexFilament}}(undef, length(inducing_filaments))
@@ -281,7 +281,7 @@ function filament_induced_dvort(
     ret = ccall(
             ("cvtx_F3D_M2S_dvort", libcvortex), 
             Vec3f, 
-            (Ref{Ptr{VortexFilament}}, Cint, Ref{VortexParticle}),
+            (Ref{Ptr{VortexFilament}}, Cint, Ref{VortexParticle3D}),
             pargarr, length(inducing_filaments), induced_particle
             )
     return Vector{Float32}(ret)
@@ -304,7 +304,7 @@ function filament_induced_dvort(
         filament_strengths[i]),
         1:ni)
     induced_particles = map(
-        i->VortexParticle(
+        i->VortexParticle3D(
             induced_particle_position[i, :], 
             induced_particle_vorticity[i, :], 0.0),
         1:np)
@@ -313,7 +313,7 @@ function filament_induced_dvort(
     for i = 1 : length(pargarr)
         pargarr[i] = Base.pointer(inducing_filaments, i)
     end
-    indarg = Vector{Ptr{VortexParticle}}(undef, np)
+    indarg = Vector{Ptr{VortexParticle3D}}(undef, np)
     for i = 1 : length(indarg)
         indarg[i] = Base.pointer(induced_particles, i)
     end
@@ -329,7 +329,7 @@ function filament_induced_dvort(
     ccall(
         ("cvtx_F3D_M2M_dvort", libcvortex), 
         Cvoid, 
-        (Ptr{Ptr{VortexFilament}}, Cint, Ptr{Ptr{VortexParticle}}, Cint, 
+        (Ptr{Ptr{VortexFilament}}, Cint, Ptr{Ptr{VortexParticle3D}}, Cint, 
             Ptr{Vec3f}),
         pargarr, ni, indarg, np, ret)
     return Matrix{Float32}(ret)
