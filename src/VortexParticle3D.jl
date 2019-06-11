@@ -99,7 +99,7 @@ function particle_induced_velocity(
 	kernel :: RegularisationFunction,
 	regularisation_radius :: Real)
 	
-	check_particle_definition(inducing_particle_position, 
+	check_particle_definition_3D(inducing_particle_position, 
 		inducing_particle_vorticity)
 	convertable_to_Vec3f_vect(measurement_point, "measurement_points")
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
@@ -132,7 +132,7 @@ function particle_induced_velocity(
 	kernel :: RegularisationFunction,
 	regularisation_radius :: Real)
     
-	check_particle_definition(inducing_particle_position, 
+	check_particle_definition_3D(inducing_particle_position, 
 		inducing_particle_vorticity)
 	convertable_to_Vec3f_vect(measurement_point, "measurement_points")
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
@@ -174,7 +174,7 @@ function particle_induced_velocity(
 	kernel :: RegularisationFunction,
 	regularisation_radius :: Real)
     
-	check_particle_definition(inducing_particle_position, 
+	check_particle_definition_3D(inducing_particle_position, 
 		inducing_particle_vorticity)
 	convertable_to_Vec3f_vect(measurement_points, "measurement_points")
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
@@ -258,9 +258,9 @@ function particle_induced_dvort(
 	kernel :: RegularisationFunction,
 	regularisation_radius :: Real)
 	
-	check_particle_definition(inducing_particle_position, 
+	check_particle_definition_3D(inducing_particle_position, 
 		inducing_particle_vorticity)
-	check_particle_definition(induced_particle_position, 
+	check_particle_definition_3D(induced_particle_position, 
 		induced_particle_vorticity)
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
 	
@@ -296,9 +296,9 @@ function particle_induced_dvort(
 	kernel :: RegularisationFunction,
 	regularisation_radius :: T)  where T <: Real
 		
-	check_particle_definition(inducing_particle_position, 
+	check_particle_definition_3D(inducing_particle_position, 
 		inducing_particle_vorticity)
-	check_particle_definition(induced_particle_position, 
+	check_particle_definition_3D(induced_particle_position, 
 		induced_particle_vorticity)
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
 	
@@ -344,9 +344,9 @@ function particle_induced_dvort(
 	kernel :: RegularisationFunction,
 	regularisation_radius :: Real)
 		
-	check_particle_definition(inducing_particle_position, 
+	check_particle_definition_3D(inducing_particle_position, 
 		inducing_particle_vorticity)
-	check_particle_definition(induced_particle_position, 
+	check_particle_definition_3D(induced_particle_position, 
 		induced_particle_vorticity)
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
 	

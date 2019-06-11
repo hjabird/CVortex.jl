@@ -43,16 +43,16 @@ struct VortexParticle2D
     volume :: Float32
 end
 
-function VortexParticle2D(coord::Vec2f, vort::Float32)
+function VortexParticle2D(coord::Vec2f, vort::Real)
     return VortexParticle2D(coord, vort, 0.0)
 end
 
-function VortexParticle2D(coord::Vector{<:Real}, vort::Float32, vol::Real)
+function VortexParticle2D(coord::Vector{<:Real}, vort::Real, vol::Real)
 	@assert(length(coord)==2)
     return VortexParticle2D(Vec2f(coord), vort, vol)
 end
 
-function VortexParticle2D(coord::Vector{<:Real}, vort::Float32)
+function VortexParticle2D(coord::Vector{<:Real}, vort::Real)
 	@assert(length(coord)==3)
     return VortexParticle2D(coord, vort, 0.0)
 end
@@ -64,7 +64,7 @@ function particle_induced_velocity(
 	kernel :: RegularisationFunction,
 	regularisation_radius :: Real)
 	
-	check_particle_definition(inducing_particle_position, 
+	check_particle_definition_2D(inducing_particle_position, 
 		inducing_particle_vorticity)
 	convertable_to_Vec2f_vect(measurement_point, "measurement_points")
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
@@ -96,7 +96,7 @@ function particle_induced_velocity(
 	kernel :: RegularisationFunction,
 	regularisation_radius :: Real)
     
-	check_particle_definition(inducing_particle_position, 
+	check_particle_definition_2D(inducing_particle_position, 
 		inducing_particle_vorticity)
 	convertable_to_Vec2f_vect(measurement_point, "measurement_points")
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
@@ -138,7 +138,7 @@ function particle_induced_velocity(
 	kernel :: RegularisationFunction,
 	regularisation_radius :: Real)
     
-	check_particle_definition(inducing_particle_position, 
+	check_particle_definition_2D(inducing_particle_position, 
 		inducing_particle_vorticity)
 	convertable_to_Vec2f_vect(measurement_points, "measurement_points")
 	convertable_to_F32(regularisation_radius, "regularisation_radius")

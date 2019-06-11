@@ -76,6 +76,26 @@ end
 
 """
     Gives an assert message if something cannot be converted to a 
+    CVortex.Vec2f or Vector{CVortex.Vec2f}.
+
+Part of CVortex. Not for client use.
+"""
+function convertable_to_Vec2f_vect(arg :: Matrix{<:Real}, argname :: String)
+    @assert(size(arg)[2]==2, "The argument "*argname*" should have size "*
+        "N by 2, but actually has size ", size(arg), ".")
+    convertable_to_F32(arg, argname)
+    return
+end
+
+function convertable_to_Vec2f_vect(arg :: Vector{<:Real}, argname :: String)
+    @assert(length(arg)==2, "The argument "*argname*" should have size "*
+        "2, but actually has size ", length(arg), ".")
+    convertable_to_F32(arg, argname)
+    return
+end
+
+"""
+    Gives an assert message if something cannot be converted to a 
     CVortex.VortexFilament or Vector{CVortex.VortexFilament}.
 
 Part of CVortex. Not for client use.
@@ -151,7 +171,7 @@ end
 
 Part of CVortex. Not for client use.
 """
-function check_particle_definition(
+function check_particle_definition_3D(
     particle_coords :: Matrix{<:Real},
     particle_vorts  :: Matrix{<:Real})
 
@@ -166,7 +186,7 @@ function check_particle_definition(
     return
 end
 
-function check_particle_definition(
+function check_particle_definition_3D(
     particle_coords :: Matrix{<:Real},
     particle_vorts  :: Matrix{<:Real},
     particle_vols :: Vector{<:Real})
@@ -189,7 +209,7 @@ function check_particle_definition(
     return
 end
 
-function check_particle_definition(
+function check_particle_definition_3D(
     particle_coords :: Vector{<:Real},
     particle_vorts  :: Vector{<:Real})
 
@@ -198,13 +218,77 @@ function check_particle_definition(
     return
 end
 
-function check_particle_definition(
+function check_particle_definition_3D(
     particle_coords :: Vector{<:Real},
     particle_vorts  :: Vector{<:Real},
     particle_vol :: Real)
 
     convertable_to_Vec3f_vect(particle_coords, "particle_coords")
     convertable_to_Vec3f_vect(particle_vorts, "particle_vorts")
+    convertable_to_F32(particle_vol, "particle_vol")
+    return
+end
+
+"""
+    Gives an assert message if something cannot be converted to a 
+    CVortex.VortexParticle2D or Vector{CVortex.VortexParticle2D}.
+
+Part of CVortex. Not for client use.
+"""
+function check_particle_definition_2D(
+    particle_coords :: Matrix{<:Real},
+    particle_vorts  :: Vector{<:Real})
+
+    convertable_to_Vec2f_vect(particle_coords, "particle_coords")
+    convertable_to_F32(particle_vorts, "particle_vorts")
+    @assert(size(particle_coords)[1]==length(particle_vorts),
+        "The number of particle defined by particle_coords does not "*
+        "match that defined by particle_vorts. particle_coords defines ",
+        size(particle_coords)[1], " particle coordinates whilst "*
+        "particle_vorts defines ", length(particle_vorts), 
+        " particle vorticities.")
+    return
+end
+
+function check_particle_definition_2D(
+    particle_coords :: Matrix{<:Real},
+    particle_vorts  :: Vector{<:Real},
+    particle_vols :: Vector{<:Real})
+
+    convertable_to_Vec2f_vect(particle_coords, "particle_coords")
+    convertable_to_F32(particle_vorts, "particle_vorts")
+    convertable_to_F32(particle_vols, "particle_vols")
+    @assert(size(particle_coords)[1]==length(particle_vorts),
+        "The number of particle defined by particle_coords does not "*
+        "match that defined by particle_vorts. particle_coords defines ",
+        size(particle_coords)[1], " particle coordinates whilst "*
+        "particle_vorts defines ", length(particle_vorts), 
+        " particle vorticities.")
+    @assert(length(particle_vols)==size(particle_coords)[1],
+        "The number of particles defined by the particle volumes vector"*
+        " does not match that of the coordinate and vorticity matrices. "*
+        "The volume vector is of length ", length(particle_vols),
+        " and particle_coords suggests ", size(particle_coords)[1],
+        " particles.")
+    return
+end
+
+function check_particle_definition_2D(
+    particle_coords :: Vector{<:Real},
+    particle_vort  :: Real)
+
+    convertable_to_Vec2f_vect(particle_coords, "particle_coords")
+    convertable_to_F32(particle_vort, "particle_vorts")
+    return
+end
+
+function check_particle_definition_2D(
+    particle_coords :: Vector{<:Real},
+    particle_vort  :: Real,
+    particle_vol :: Real)
+
+    convertable_to_Vec2f_vect(particle_coords, "particle_coords")
+    convertable_to_F32(particle_vort, "particle_vort")
     convertable_to_F32(particle_vol, "particle_vol")
     return
 end
