@@ -49,10 +49,12 @@ my_regularisation_kernel = gaussian_regularisation()
 ```
 """
 struct RegularisationFunction
-	g_fn :: Ptr{Cvoid}			# Actually float(*g_fn)(float rho)
-	zeta_fn :: Ptr{Cvoid}		# Actually float(*zeta_fn)(float rho)
-	combined_fn :: Ptr{Cvoid}	# Actually void(*combined_fn)(float rho, float* g, float* zeta)
-	eta_fn :: Ptr{Cvoid}		# Actually float(*eta_fn)(float rho)
+	g_3D :: Ptr{Cvoid}			# Actually float(*g_3D)(float rho)
+	g_2D :: Ptr{Cvoid}			# Actually float(*g_2D)(float rho)
+	zeta_3D :: Ptr{Cvoid}		# Actually float(*zeta_3D)(float rho)
+	combined_3D :: Ptr{Cvoid}	# Actually void(*combined_3D)(float rho, float* g, float* zeta)
+	eta_3D :: Ptr{Cvoid}		# Actually float(*eta_3D)(float rho)
+	eta_2D :: Ptr{Cvoid}		# Actually float(*eta_2D)(float rho)
 	cl_kernel_name_ext :: NTuple{32, Cchar}	# Char[32]
 end
 

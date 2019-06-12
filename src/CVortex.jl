@@ -74,9 +74,11 @@ module CVortex
 	#-------------------------------------------------------------------------
 	include("ConvertionChecks.jl")
 	include("Vec3f.jl")
+	include("Vec2f.jl")
 	include("Accelerators.jl")
 	include("RegularisationFunction.jl")
-	include("VortexParticle.jl")
+	include("VortexParticle3D.jl")
+	include("VortexParticle2D.jl")
 	include("VortexFilament.jl")
 
 end #module
