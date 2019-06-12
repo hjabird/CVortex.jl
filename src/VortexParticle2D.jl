@@ -59,7 +59,7 @@ end
 
 function particle_induced_velocity(
     inducing_particle_position :: Vector{<:Real},
-    inducing_particle_vorticity :: Float32,
+    inducing_particle_vorticity :: Real,
 	measurement_point :: Vector{<:Real},
 	kernel :: RegularisationFunction,
 	regularisation_radius :: Real)
