@@ -175,3 +175,75 @@ function particle_induced_velocity(
 		pargarr, np, mes_pnt, ni, ret, kernel, regularisation_radius)
 	return Matrix{Float32}(ret)
 end
+
+function redistribute_particles_on_grid(
+    inducing_particle_position :: Matrix{<:Real},
+	inducing_particle_vorticity :: Vector{<:Real},
+	redistribution_function :: RedistributionFunction,
+	grid_density :: Real;
+	negligible_vort::Real=1e-4,
+	max_new_particles::Integer=-1)
+
+	@assert(0 <= negligible_vort < 1, "The negligible_vort vort must be"*
+		" in [0, 1). Given "*string(negligible_vort)*"." )
+	@assert((max_new_particles==-1)||(0<=max_new_particles), 
+		"max_new_particles must be -1 (indicating any number of new particles"*
+		") or a positive integer.")
+	@assert(0<grid_density, "Grid density must be positive. Was "*
+		string(grid_density)*".")
+	check_particle_definition_2D(inducing_particle_position, 
+		inducing_particle_vorticity)
+	convertable_to_F32(grid_density, "grid_density")
+	convertable_to_F32(negligible_vort, "negligible_vort")
+		
+	np = size(inducing_particle_position)[1]
+	inducing_particles = map(
+		i->VortexParticle2D(
+			inducing_particle_position[i, :], 
+			inducing_particle_vorticity[i], 0.0),
+		1:np)
+	
+	pargarr = Vector{Ptr{VortexParticle2D}}(undef, np)
+	for i = 1 : length(pargarr)
+		pargarr[i] = Base.pointer(inducing_particles, i)
+	end
+	#=
+	CVTX_EXPORT int cvtx_P2D_redistribute_on_grid(
+		const cvtx_P2D **input_array_start,
+		const int n_input_particles,
+		cvtx_P2D *output_particles,		/* input is &(*cvtx_P2D) to write to */
+		int max_output_particles,		/* Set to resultant num particles.   */
+		const cvtx_RedistFunc *redistributor,
+		float grid_density,
+		float negligible_vort)
+	=#
+	if max_new_particles == -1
+		max_new_particles = ccall(
+			("cvtx_P2D_redistribute_on_grid", libcvortex), 
+			Cint, 
+			(Ptr{Ptr{VortexParticle2D}}, Cint, Ptr{VortexParticle2D}, 
+				Cint, Ref{RedistributionFunction}, Cfloat, Cfloat),
+			pargarr, np, C_NULL, 1, redistribution_function, 
+			grid_density, negligible_vort)
+	end
+
+	ret = Vector{VortexParticle2D}(undef, max_new_particles)
+	nnp = ccall(
+		("cvtx_P2D_redistribute_on_grid", libcvortex), 
+		Cint, 
+		(Ptr{Ptr{VortexParticle2D}}, Cint, Ptr{VortexParticle2D}, 
+			Cint, Ref{RedistributionFunction}, Cfloat, Cfloat),
+		pargarr, np, ret, max_new_particles, redistribution_function, 
+		grid_density, negligible_vort)
+
+	# nnp is the number of new particles.
+	nvorts = zeros(Float32, nnp)
+	nposns = zeros(Float32, nnp, 2)
+	nareas = zeros(Float32, nnp)
+	for i = 1 : nnp
+		nvorts[i] = ret[i].vorticity
+		nposns[i, :] = Vector{Float32}(ret[i].coord)
+		nareas[i] = ret[i].volume
+	end
+	return nposns, nvorts, nareas
+end

@@ -429,10 +429,10 @@ function particle_visc_induced_dvort(
 	@assert(kernel.eta_fn!=Cvoid, "You cannot use this regularisation "*
 		"function for viscous simulations. Consider Winckelmans or Gaussian.")
 	
-    inducing_particle = VortexParticle(
+    inducing_particle = VortexParticle3D(
         inducing_particle_position, 
         inducing_particle_vorticity, induced_particle_volume)
-	induced_particle = VortexParticle(
+	induced_particle = VortexParticle3D(
 		induced_particle_position, 
 		induced_particle_vorticity, induced_particle_volume)
 	ret = Vec3f(0., 0., 0.)
@@ -447,7 +447,7 @@ function particle_visc_induced_dvort(
 	ret = ccall(
 			("cvtx_Particle_visc_ind_dvort", libcvortex), 
 			Vec3f, 
-			(Ref{VortexParticle}, Ref{VortexParticle}, 
+			(Ref{VortexParticle3D}, Ref{VortexParticle3D}, 
 				Ref{RegularisationFunction}, Cfloat, Cfloat),
 			inducing_particle, induced_particle, kernel, 
 				regularisation_radius, kinematic_visc
@@ -476,15 +476,15 @@ function particle_visc_induced_dvort(
 	
 	np = size(induced_particle_position)[1]
 	inducing_particles = map(
-		i->VortexParticle(
+		i->VortexParticle3D(
 			inducing_particle_position[i, :], 
 			inducing_particle_vorticity[i, :], inducing_particle_volume[i]),
 		1:np)
-	induced_particle = VortexParticle(
+	induced_particle = VortexParticle3D(
 		induced_particle_position, 
 		induced_particle_vorticity, induced_particle_volume)
 
-	pargarr = Vector{Ptr{VortexParticle}}(undef, np)
+	pargarr = Vector{Ptr{VortexParticle3D}}(undef, np)
 	for i = 1 : length(pargarr)
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
@@ -501,7 +501,7 @@ function particle_visc_induced_dvort(
 	ret = ccall(
 			("cvtx_ParticleArr_visc_ind_dvort", libcvortex), 
 			Vec3f, 
-			(Ref{Ptr{VortexParticle}}, Cint, Ref{VortexParticle}, 
+			(Ref{Ptr{VortexParticle3D}}, Cint, Ref{VortexParticle3D}, 
 				Ref{RegularisationFunction}, Cfloat, Cfloat),
 			pargarr, np, induced_particle, kernel, 
 				regularisation_radius, kinematic_visc
@@ -531,21 +531,21 @@ function particle_visc_induced_dvort(
 	np = size(inducing_particle_position)[1]
 	ni = size(induced_particle_position)[1]
 	inducing_particles = map(
-		i->VortexParticle(
+		i->VortexParticle3D(
 			inducing_particle_position[i, :], 
 			inducing_particle_vorticity[i, :], inducing_particle_volume[i]),
 		1:np)
 	induced_particles = map(
-		i->VortexParticle(
+		i->VortexParticle3D(
 			inducing_particle_position[i, :], 
 			inducing_particle_vorticity[i, :], induced_particle_volume[i]),
 		1:ni)
 
-	pargarr = Vector{Ptr{VortexParticle}}(undef, length(inducing_particles))
+	pargarr = Vector{Ptr{VortexParticle3D}}(undef, length(inducing_particles))
 	for i = 1 : length(pargarr)
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
-	indarg = Vector{Ptr{VortexParticle}}(undef, ni)
+	indarg = Vector{Ptr{VortexParticle3D}}(undef, ni)
 	for i = 1 : length(indarg)
 		indarg[i] = Base.pointer(induced_particles, i)
 	end
@@ -564,10 +564,84 @@ function particle_visc_induced_dvort(
 	ccall(
 		("cvtx_ParticleArr_Arr_visc_ind_dvort", libcvortex), 
 		Cvoid, 
-		(Ptr{Ptr{VortexParticle}}, Cint, Ptr{Ptr{VortexParticle}}, Cint, 
+		(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{Ptr{VortexParticle3D}}, Cint, 
 			Ptr{Vec3f}, Ref{RegularisationFunction}, Cfloat, Cfloat),
 		pargarr, length(inducing_particles), indarg, length(induced_particles),
 			ret, kernel, regularisation_radius, kinematic_visc
 		)
 	return Matrix{Float32}(ret)
+end
+
+function redistribute_particles_on_grid(
+    inducing_particle_position :: Matrix{<:Real},
+	inducing_particle_vorticity :: Matrix{<:Real},
+	redistribution_function :: RedistributionFunction,
+	grid_density :: Real;
+	negligible_vort::Real=1e-4,
+	max_new_particles::Integer=-1)
+
+	@assert(0 <= negligible_vort < 1, "The negligible_vort vort must be"*
+		" in [0, 1). Given "*string(negligible_vort)*"." )
+	@assert((max_new_particles==-1)||(0<=max_new_particles), 
+		"max_new_particles must be -1 (indicating any number of new particles"*
+		") or a positive integer.")
+	@assert(0<grid_density, "Grid density must be positive. Was "*
+		string(grid_density)*".")
+	check_particle_definition_3D(inducing_particle_position, 
+		inducing_particle_vorticity)
+	convertable_to_F32(grid_density, "grid_density")
+	convertable_to_F32(negligible_vort, "negligible_vort")
+		
+	np = size(inducing_particle_position)[1]
+	inducing_particles = map(
+		i->VortexParticle3D(
+			inducing_particle_position[i, :], 
+			inducing_particle_vorticity[i, :], 0.0),
+		1:np)
+	
+	pargarr = Vector{Ptr{VortexParticle3D}}(undef, np)
+	for i = 1 : length(pargarr)
+		pargarr[i] = Base.pointer(inducing_particles, i)
+	end
+	#=
+	CVTX_EXPORT int cvtx_P3D_redistribute_on_grid(
+		const cvtx_P3D **input_array_start,
+		const int n_input_particles,
+		cvtx_P3D *output_particles,		/* input is &(*cvtx_P3D) to write to */
+		int max_output_particles,		/* Set to resultant num particles.   */
+		const cvtx_RedistFunc *redistributor,
+		float grid_density,
+		float negligible_vort);
+	=#
+	println(Base.pointer(pargarr, 1))
+	println(Base.pointer(inducing_particles, 1))
+	if max_new_particles == -1
+		max_new_particles = ccall(
+			("cvtx_P3D_redistribute_on_grid", libcvortex), 
+			Cint, 
+			(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{VortexParticle3D}, 
+				Cint, Ref{RedistributionFunction}, Cfloat, Cfloat),
+			pargarr, np, C_NULL, 1, redistribution_function, 
+			grid_density, negligible_vort)
+	end
+
+	ret = Vector{VortexParticle3D}(undef, max_new_particles)
+	nnp = ccall(
+		("cvtx_P3D_redistribute_on_grid", libcvortex), 
+		Cint, 
+		(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{VortexParticle3D}, 
+			Cint, Ref{RedistributionFunction}, Cfloat, Cfloat),
+		pargarr, np, ret, max_new_particles, redistribution_function, 
+		grid_density, negligible_vort)
+
+	# nnp is the number of new particles.
+	nvorts = zeros(Float32, nnp, 3)
+	nposns = zeros(Float32, nnp, 3)
+	nareas = zeros(Float32, nnp)
+	for i = 1 : nnp
+		nvorts[i, :] = Vector{Float32}(ret[i].vorticity)
+		nposns[i, :] = Vector{Float32}(ret[i].coord)
+		nareas[i] = ret[i].volume
+	end
+	return nposns, nvorts, nareas
 end
