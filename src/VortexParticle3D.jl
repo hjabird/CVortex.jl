@@ -393,22 +393,21 @@ function particle_induced_dvort(
 end
 
 """
-TODO
-
-Rate of change of vorticity induced on vortex particles by element in the 
-flowfield. The third multiple-multiple variant may be GPU accelerated.
+The rate of change of vorticity induced on vortex particles by element in the 
+flowfield due to viscocity. 
+The third multiple-multiple variant may be GPU accelerated.
 
 # Arguments
 - `inducing_particle_position` : Position of inducing particles
 - `inducing_particle_vorticity` : Vorticity of inducing particles
+- `inducing_particle_volume` : Volume of inducing particles
 - `induced_particle_position` : Position of induced particles
 - `induced_particle_vorticity` : Vorticity of induced particles
+- `induced_particle_volume` : Volume of induced particles
 - `kernel :: CVortex.RegularisationFunction` : Regularisation function
 (VortFunc_winckelmans for example)
 - `regularisation_radius :: Real` : Regularisation distance
-
-Vector arguments are expected to have length 3. Matrix arguments are
-expected to have size N by 3.
+- `kinematic_visc :: Real` : Kinematic viscocity
 """
 function particle_visc_induced_dvort(
     inducing_particle_position :: Vector{<:Real},
@@ -421,9 +420,9 @@ function particle_visc_induced_dvort(
 	regularisation_radius :: Real,
 	kinematic_visc :: Real)
 	
-	check_particle_definition(inducing_particle_position, 
+	check_particle_definition_3D(inducing_particle_position, 
 		inducing_particle_vorticity, inducing_particle_volume)
-	check_particle_definition(induced_particle_position, 
+	check_particle_definition_3D(induced_particle_position, 
 		induced_particle_vorticity, induced_particle_volume)
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
 	@assert(kernel.eta_fn!=Cvoid, "You cannot use this regularisation "*
@@ -437,15 +436,15 @@ function particle_visc_induced_dvort(
 		induced_particle_vorticity, induced_particle_volume)
 	ret = Vec3f(0., 0., 0.)
 	#=
-	bsv_V3f cvtx_Particle_visc_ind_dvort(
-		const cvtx_Particle *self,
-		const cvtx_Particle *induced_particle,
+	CVTX_EXPORT bsv_V3f cvtx_P3D_S2S_visc_dvort(
+		const cvtx_P3D *self,
+		const cvtx_P3D *induced_particle,
 		const cvtx_VortFunc *kernel,
 		float regularisation_radius,
 		float kinematic_visc);
 	=#
 	ret = ccall(
-			("cvtx_Particle_visc_ind_dvort", libcvortex), 
+			("cvtx_P3D_S2S_visc_dvort", libcvortex), 
 			Vec3f, 
 			(Ref{VortexParticle3D}, Ref{VortexParticle3D}, 
 				Ref{RegularisationFunction}, Cfloat, Cfloat),
@@ -466,9 +465,9 @@ function particle_visc_induced_dvort(
 	regularisation_radius :: Real,
 	kinematic_visc :: Real)
 		
-	check_particle_definition(inducing_particle_position, 
+	check_particle_definition_3D(inducing_particle_position, 
 		inducing_particle_vorticity, inducing_particle_volume)
-	check_particle_definition(induced_particle_position, 
+	check_particle_definition_3D(induced_particle_position, 
 		induced_particle_vorticity, induced_particle_volume)
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
 	@assert(kernel.eta_fn!=Cvoid, "You cannot use this regularisation "*
@@ -490,16 +489,16 @@ function particle_visc_induced_dvort(
 	end
 	ret = Vec3f(0., 0., 0.)
 	#=
-	bsv_V3f cvtx_ParticleArr_visc_ind_dvort(
-		const cvtx_Particle **array_start,
+	CVTX_EXPORT bsv_V3f cvtx_P3D_M2S_visc_dvort(
+		const cvtx_P3D **array_start,
 		const int num_particles,
-		const cvtx_Particle *induced_particle,
+		const cvtx_P3D *induced_particle,
 		const cvtx_VortFunc *kernel,
 		float regularisation_radius,
 		float kinematic_visc);
 	=#
 	ret = ccall(
-			("cvtx_ParticleArr_visc_ind_dvort", libcvortex), 
+			("cvtx_P3D_M2S_visc_dvort", libcvortex), 
 			Vec3f, 
 			(Ref{Ptr{VortexParticle3D}}, Cint, Ref{VortexParticle3D}, 
 				Ref{RegularisationFunction}, Cfloat, Cfloat),
@@ -520,12 +519,12 @@ function particle_visc_induced_dvort(
 	regularisation_radius :: Real,
 	kinematic_visc :: Real)
 		
-	check_particle_definition(inducing_particle_position, 
+	check_particle_definition_3D(inducing_particle_position, 
 		inducing_particle_vorticity, inducing_particle_volume)
-	check_particle_definition(induced_particle_position, 
+	check_particle_definition_3D(induced_particle_position, 
 		induced_particle_vorticity, induced_particle_volume)
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
-	@assert(kernel.eta_fn!=Cvoid, "You cannot use this regularisation "*
+	@assert(kernel.eta_3D!=Cvoid, "You cannot use this regularisation "*
 		"function for viscous simulations. Consider Winckelmans or Gaussian.")
 	
 	np = size(inducing_particle_position)[1]
@@ -551,10 +550,10 @@ function particle_visc_induced_dvort(
 	end
 	ret = Vector{Vec3f}(undef, ni)
 	#=
-	void cvtx_ParticleArr_Arr_visc_ind_dvort(
-		const cvtx_Particle **array_start,
+	CVTX_EXPORT void cvtx_P3D_M2M_visc_dvort(
+		const cvtx_P3D **array_start,
 		const int num_particles,
-		const cvtx_Particle **induced_start,
+		const cvtx_P3D **induced_start,
 		const int num_induced,
 		bsv_V3f *result_array,
 		const cvtx_VortFunc *kernel,
@@ -562,7 +561,7 @@ function particle_visc_induced_dvort(
 		float kinematic_visc);
 	=#
 	ccall(
-		("cvtx_ParticleArr_Arr_visc_ind_dvort", libcvortex), 
+		("cvtx_P3D_M2M_visc_dvort", libcvortex), 
 		Cvoid, 
 		(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{Ptr{VortexParticle3D}}, Cint, 
 			Ptr{Vec3f}, Ref{RegularisationFunction}, Cfloat, Cfloat),

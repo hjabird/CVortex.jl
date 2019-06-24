@@ -33,23 +33,29 @@ A GPU accelerated vortex particle and vortex filament library.
 """
 module CVortex
 
-	export 	singular_regularisation,
-			planetary_regularisation,
-			gaussian_regularisation,
-			winckelmans_regularisation,
-			particle_induced_velocity,
+	export 	particle_induced_velocity,
 			filament_induced_velocity,
 			particle_induced_dvort,
 			filament_induced_dvort,
+			particle_visc_induced_dvort,
 			filament_induced_velocity_influence_matrix,
+			RegularisationFunction,
+			singular_regularisation,
+			planetary_regularisation,
+			gaussian_regularisation,
+			winckelmans_regularisation,
+			RedistributionFunction,
+			lambda0_redistribution,
+			lambda1_redistribution,
+			lambda2_redistribution,
+			lambda3_redistribution,
+			m4p_redistribution,
 			number_of_accelerators,
 			number_of_enabled_accelerators,
 			accelerator_name,
 			accelerator_enabled,
 			accelerator_enable,
-			accelerator_disable,
-			RegularisationFunction
-
+			accelerator_disable
 	#-------------------------------------------------------------------------
 	# Loading shared library binary (cvortex)
 
@@ -77,6 +83,7 @@ module CVortex
 	include("Vec2f.jl")
 	include("Accelerators.jl")
 	include("RegularisationFunction.jl")
+	include("RedistributionFunction.jl")
 	include("VortexParticle3D.jl")
 	include("VortexParticle2D.jl")
 	include("VortexFilament.jl")

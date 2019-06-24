@@ -203,7 +203,7 @@ function check_particle_definition_3D(
     @assert(length(particle_vols)==size(particle_coords)[1],
         "The number of particles defined by the particle volumes vector"*
         " does not match that of the coordinate and vorticity matrices. "*
-        "The volume vector is of length ", length(particle_vols),
+        "The volume vector is of length "*string(length(particle_vols))*
         " and particle_coords suggests "*string(size(particle_coords)[1])*
         " particles.")
     return
