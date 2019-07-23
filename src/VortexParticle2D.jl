@@ -177,67 +177,6 @@ function particle_induced_velocity(
 end
 
 function particle_visc_induced_dvort(
-    inducing_particle_position :: Matrix{<:Real},
-	inducing_particle_vorticity :: Vector{<:Real},
-	inducing_particle_area :: Vector{<:Real},
-    induced_particle_position :: Matrix{<:Real},
-	induced_particle_vorticity :: Vector{<:Real},
-	induced_particle_area :: Vector{<:Real},
-	kernel :: RegularisationFunction,
-	regularisation_radius :: Real,
-	kinematic_visc :: Real)
-		
-	check_particle_definition_2D(inducing_particle_position, 
-		inducing_particle_vorticity, inducing_particle_area)
-	check_particle_definition_2D(induced_particle_position, 
-		induced_particle_vorticity, induced_particle_area)
-	convertable_to_F32(regularisation_radius, "regularisation_radius")
-	@assert(kernel.eta_2D!=Cvoid, "You cannot use this regularisation "*
-		"function for viscous simulations. Consider Winckelmans or Gaussian.")
-	
-	np = size(inducing_particle_position)[1]
-	ni = size(induced_particle_position)[1]
-	inducing_particles = map(
-		i->VortexParticle2D(
-			inducing_particle_position[i, :], 
-			inducing_particle_vorticity[i, :], inducing_particle_area[i]),
-		1:np)
-	induced_particles = map(
-		i->VortexParticle2D(
-			inducing_particle_position[i, :], 
-			inducing_particle_vorticity[i, :], induced_particle_area[i]),
-		1:ni)
-
-	pargarr = Vector{Ptr{VortexParticle2D}}(undef, length(inducing_particles))
-	for i = 1 : length(pargarr)
-		pargarr[i] = Base.pointer(inducing_particles, i)
-	end
-	indarg = Vector{Ptr{VortexParticle2D}}(undef, ni)
-	for i = 1 : length(indarg)
-		indarg[i] = Base.pointer(induced_particles, i)
-	end
-	ret = Vector{Float32}(undef, ni)
-	#=
-	CVTX_EXPORT float cvtx_P2D_M2S_visc_dvort(
-		const cvtx_P2D **array_start,
-		const int num_particles,
-		const cvtx_P2D *induced_particle,
-		const cvtx_VortFunc *kernel,
-		float regularisation_radius,
-		float kinematic_visc);
-	=#
-	ccall(
-		("cvtx_P2D_M2M_visc_dvort", libcvortex), 
-		Cvoid, 
-		(Ptr{Ptr{VortexParticle2D}}, Cint, Ptr{Ptr{VortexParticle2D}}, Cint, 
-			Ptr{Float32}, Ref{RegularisationFunction}, Cfloat, Cfloat),
-		pargarr, length(inducing_particles), indarg, length(induced_particles),
-			ret, kernel, regularisation_radius, kinematic_visc
-		)
-	return ret
-end
-
-function particle_visc_induced_dvort(
     inducing_particle_position :: Vector{<:Real},
 	inducing_particle_vorticity :: Real,
 	inducing_particle_area :: Real,
