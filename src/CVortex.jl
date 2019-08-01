@@ -44,6 +44,7 @@ module CVortex
 			planetary_regularisation,
 			gaussian_regularisation,
 			winckelmans_regularisation,
+			redistribute_particles_on_grid,
 			RedistributionFunction,
 			lambda0_redistribution,
 			lambda1_redistribution,

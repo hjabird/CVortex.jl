@@ -47,26 +47,52 @@ struct RedistributionFunction
 end
 
 #= Functions to to get VortexFunc structures =#
+
+"""
+Implements 0th order redistribution method.
+The use of this redistribution is not advised.
+lambda3_redistribution or m4p_redistribution are advised.
+returns RedistributionFunction struct.
+"""
 function lambda0_redistribution()
 	ret = ccall(("cvtx_RedistFunc_lambda0", libcvortex), 
         RedistributionFunction, ())
 	return ret;
 end
+"""
+Implements 1st order redistribution method.
+This method is dissipative.
+returns RedistributionFunction struct.
+"""
 function lambda1_redistribution()
 	ret = ccall(("cvtx_RedistFunc_lambda1", libcvortex), 
         RedistributionFunction, ())
 	return ret;
 end
+"""
+Implements 2nd order redistribution method.
+This redistribution is discontinuous, and consequently numerically
+less useful than the lambda3_redistribution or m4p_redistribution.
+returns RedistributionFunction struct.
+"""
 function lambda2_redistribution()
 	ret = ccall(("cvtx_RedistFunc_lambda2", libcvortex), 
         RedistributionFunction, ())
 	return ret;
 end
+"""
+Implements 3th order redistribution method.
+returns RedistributionFunction struct.
+"""
 function lambda3_redistribution()
 	ret = ccall(("cvtx_RedistFunc_lambda3", libcvortex), 
         RedistributionFunction, ())
 	return ret;
 end
+"""
+Implements M_4' method of vorticity redistribution.
+returns RedistributionFunction struct.
+"""
 function m4p_redistribution()
 	ret = ccall(("cvtx_RedistFunc_m4p", libcvortex), 
         RedistributionFunction, ())

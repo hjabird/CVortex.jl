@@ -60,23 +60,58 @@ function VortexParticle3D(coord::Vector{<:Real}, vort::Vector{<:Real})
 end
 
 """
+# 3D vortex particle functions
+Single particle -> single velocity measurement
+
 	particle_induced_velocity(
 		inducing_particle_position :: Vector{<:Real},
 		inducing_particle_vorticity :: Vector{<:Real},
 		measurement_point :: Vector{<:Real},
 		kernel :: RegularisationFunction, regularisation_radius :: Real)
 
+Multiple particles -> single velocity measurement
+
 	particle_induced_velocity(
-		inducing_particle_position :: Matrix{<:Real},
-		inducing_particle_vorticity :: Matrix{<:Real},
+		inducing_particle_positions :: Matrix{<:Real},
+		inducing_particle_vorticities :: Matrix{<:Real},
 		measurement_point :: Vector{<:Real},
 		kernel :: RegularisationFunction, regularisation_radius :: Real)
 
+Multiple particles -> multiple velocity measurements
+
 	particle_induced_velocity(
-		inducing_particle_position :: Matrix{<:Real},
-		inducing_particle_vorticity :: Matrix{<:Real},
+		inducing_particle_positions :: Matrix{<:Real},
+		inducing_particle_vorticities :: Matrix{<:Real},
 		measurement_points :: Matrix{<:Real},
 		kernel :: RegularisationFunction, regularisation_radius :: Real)
+		
+# 2D vortex particle functions
+Single particle -> single velocity measurement
+
+	particle_induced_velocity(
+		inducing_particle_position :: Vector{<:Real},
+		inducing_particle_vorticity :: Real,
+		measurement_point :: Vector{<:Real},
+		kernel :: RegularisationFunction,
+		regularisation_radius :: Real)
+
+Multiple particles -> single velocity measurement
+
+	particle_induced_velocity(
+		inducing_particle_positions :: Matrix{<:Real},
+		inducing_particle_vorticities :: Vector{<:Real},
+		measurement_point :: Vector{<:Real},
+		kernel :: RegularisationFunction,
+		regularisation_radius :: Real)
+	
+Multiple particles -> multiple velocity measurements
+
+	particle_induced_velocity(
+		inducing_particle_positions :: Matrix{<:Real},
+		inducing_particle_vorticities :: Vector{<:Real},
+		measurement_points :: Matrix{<:Real},
+		kernel :: RegularisationFunction,
+		regularisation_radius :: Real)
 
 Compute the velocity induced in the flow field by vortex particles. The
 third (multiple-multiple) method may be GPU accelerated.
@@ -85,12 +120,19 @@ third (multiple-multiple) method may be GPU accelerated.
 - `inducing_particle_position` : Position of inducing particles
 - `inducing_particle_vorticity` : Vorticity of inducing particles
 - `mesurement_points` : Measurement points 
-- `kernel :: CVortex.RegularisationFunction` : Regularisation function
-(VortFunc_winckelmans for example)
+- `kernel :: RegularisationFunction` : Regularisation function (winckelmans_regularisation() for example)
 - `regularisation_radius :: Real` : Regularisation distance
 
-Vector arguments are expected to have length 3. Matrix arguments are
-expected to have size N by 3.
+In 3D, matrix arguments are expected to have size N by 3.
+In 2D, matrix arguments are expected to have size N by 2.
+
+The method will return velocity as:
+- 3D - S2S: Vector length 3
+- 3D - M2S: Vector length 3
+- 3D - M2M: Matrix size N by 3
+- 2D - S2S: Vector length 2
+- 2D - M2S: Vector length 2
+- 2D - M2M: Matrix size N by 2
 """
 function particle_induced_velocity(
     inducing_particle_position :: Vector{<:Real},
@@ -213,6 +255,7 @@ function particle_induced_velocity(
 end
 
 """
+
 	particle_induced_dvort(
 		inducing_particle_position :: Vector{<:Real},
 		inducing_particle_vorticity :: Vector{<:Real},
@@ -234,15 +277,16 @@ end
 		induced_particle_vorticity :: Matrix{<:Real},
 		kernel :: RegularisationFunction, regularisation_radius :: Real)
 
-Rate of change of vorticity induced on vortex particles by element in the 
-flowfield. The third multiple-multiple variant may be GPU accelerated.
+Rate of change of vorticity induced on vortex particles by vortex stretching. 
+The third multiple-multiple variant may be GPU accelerated.
+In 2D, vortex stretching does not occur, so there is no 2D counterpart.
 
 # Arguments
 - `inducing_particle_position` : Position of inducing particles
 - `inducing_particle_vorticity` : Vorticity of inducing particles
 - `induced_particle_position` : Position of induced particles
 - `induced_particle_vorticity` : Vorticity of induced particles
-- `kernel :: CVortex.RegularisationFunction` : Regularisation function
+- `kernel :: RegularisationFunction` : Regularisation function
 (VortFunc_winckelmans for example)
 - `regularisation_radius :: Real` : Regularisation distance
 
@@ -393,8 +437,78 @@ function particle_induced_dvort(
 end
 
 """
-The rate of change of vorticity induced on vortex particles by element in the 
-flowfield due to viscocity. 
+# 3D functions
+
+	particle_visc_induced_dvort(
+		inducing_particle_position :: Vector{<:Real},
+		inducing_particle_vorticity :: Vector{<:Real},
+		inducing_particle_volume :: Real,
+		induced_particle_position :: Vector{<:Real},
+		induced_particle_vorticity :: Vector{<:Real},
+		induced_particle_volume :: Real,
+		kernel :: RegularisationFunction,
+		regularisation_radius :: Real,
+		kinematic_visc :: Real)
+		
+	particle_visc_induced_dvort(
+		inducing_particle_position :: Matrix{<:Real},
+		inducing_particle_vorticity :: Matrix{<:Real},
+		inducing_particle_volume :: Vector{<:Real},
+		induced_particle_position :: Vector{<:Real},
+		induced_particle_vorticity :: Vector{<:Real},
+		induced_particle_volume :: Real,
+		kernel :: RegularisationFunction,
+		regularisation_radius :: Real,
+		kinematic_visc :: Real)
+		
+	particle_visc_induced_dvort(
+		inducing_particle_position :: Matrix{<:Real},
+		inducing_particle_vorticity :: Matrix{<:Real},
+		inducing_particle_volume :: Vector{<:Real},
+		induced_particle_position :: Matrix{<:Real},
+		induced_particle_vorticity :: Matrix{<:Real},
+		induced_particle_volume :: Vector{<:Real},
+		kernel :: RegularisationFunction,
+		regularisation_radius :: Real,
+		kinematic_visc :: Real)
+		
+# 2D functions 
+
+	particle_visc_induced_dvort(
+		inducing_particle_position :: Vector{<:Real},
+		inducing_particle_vorticity :: Real,
+		inducing_particle_area :: Real,
+		induced_particle_position :: Vector{<:Real},
+		induced_particle_vorticity :: Real,
+		induced_particle_area :: Real,
+		kernel :: RegularisationFunction,
+		regularisation_radius :: Real,
+		kinematic_visc :: Real)
+
+	particle_visc_induced_dvort(
+		inducing_particle_position :: Matrix{<:Real},
+		inducing_particle_vorticity :: Vector{<:Real},
+		inducing_particle_area :: Vector{<:Real},
+		induced_particle_position :: Vector{<:Real},
+		induced_particle_vorticity :: Real,
+		induced_particle_area :: Real,
+		kernel :: RegularisationFunction,
+		regularisation_radius :: Real,
+		kinematic_visc :: Real)
+		
+	particle_visc_induced_dvort(
+		inducing_particle_position :: Matrix{<:Real},
+		inducing_particle_vorticity :: Vector{<:Real},
+		inducing_particle_area :: Vector{<:Real},
+		induced_particle_position :: Matrix{<:Real},
+		induced_particle_vorticity :: Vector{<:Real},
+		induced_particle_area :: Vector{<:Real},
+		kernel :: RegularisationFunction,
+		regularisation_radius :: Real,
+		kinematic_visc :: Real)
+
+The rate of change of vorticity induced on vortex particles by elements in the 
+flowfield due to viscosity. 
 The third multiple-multiple variant may be GPU accelerated.
 
 # Arguments
@@ -404,10 +518,9 @@ The third multiple-multiple variant may be GPU accelerated.
 - `induced_particle_position` : Position of induced particles
 - `induced_particle_vorticity` : Vorticity of induced particles
 - `induced_particle_volume` : Volume of induced particles
-- `kernel :: CVortex.RegularisationFunction` : Regularisation function
-(VortFunc_winckelmans for example)
+- `kernel :: RegularisationFunction` : Regularisation function (winckelmans_regularisation() for example)
 - `regularisation_radius :: Real` : Regularisation distance
-- `kinematic_visc :: Real` : Kinematic viscocity
+- `kinematic_visc :: Real` : Kinematic viscosity
 """
 function particle_visc_induced_dvort(
     inducing_particle_position :: Vector{<:Real},
@@ -571,9 +684,44 @@ function particle_visc_induced_dvort(
 	return Matrix{Float32}(ret)
 end
 
+"""
+	redistribute_particles_on_grid(
+		particle_positions :: Matrix{<:Real},
+		particle_vorticities :: Matrix{<:Real},
+		redistribution_function :: RedistributionFunction,
+		grid_density :: Real;
+		negligible_vort::Real=1e-4,
+		max_new_particles::Integer=-1)
+
+	redistribute_particles_on_grid(
+		particle_positions :: Matrix{<:Real},
+		inducing_particle_vorticity :: Vector{<:Real},
+		redistribution_function :: RedistributionFunction,
+		grid_density :: Real;
+		negligible_vort::Real=1e-4,
+		max_new_particles::Integer=-1)
+
+Redistribute vorticity from vortex particles onto a regular grid.
+
+# Arguments
+- `particle_positions` : Position of particles to be redistributed.
+- `particle_vorticities` : Vorticity of particles to be redistributed
+- `redistribution_function :: RedistributionFunction` : Redistribution function (lambda3_redistribution() for example).
+- `grid density :: Real` : The distance between newly placed particles on the grid.
+- `negligible_vort :: Real` : The vorticity threshold at which to discard vortex particles. Given as abs(vorticity) as a proportion of the average particle's abs(vorticity)
+- `max_new_particles::Integer` : The maximum number of particles that the grid can contain. -1 indicates that any number of particles can be created.
+
+returns 
+
+	particle_positions, particle_vorts, particle_areas = redistribute_particles_on_grid(...)
+	
+where the
+number of created particles may be less that the max_new_particles variable, even
+when the number of particles is limited by the max_new_particles variable.
+"""
 function redistribute_particles_on_grid(
-    inducing_particle_position :: Matrix{<:Real},
-	inducing_particle_vorticity :: Matrix{<:Real},
+    particle_positions :: Matrix{<:Real},
+	particle_vorticities :: Matrix{<:Real},
 	redistribution_function :: RedistributionFunction,
 	grid_density :: Real;
 	negligible_vort::Real=1e-4,
@@ -586,16 +734,16 @@ function redistribute_particles_on_grid(
 		") or a positive integer.")
 	@assert(0<grid_density, "Grid density must be positive. Was "*
 		string(grid_density)*".")
-	check_particle_definition_3D(inducing_particle_position, 
-		inducing_particle_vorticity)
+	check_particle_definition_3D(particle_positions, 
+		particle_vorticities)
 	convertable_to_F32(grid_density, "grid_density")
 	convertable_to_F32(negligible_vort, "negligible_vort")
 		
-	np = size(inducing_particle_position)[1]
+	np = size(particle_positions)[1]
 	inducing_particles = map(
 		i->VortexParticle3D(
-			inducing_particle_position[i, :], 
-			inducing_particle_vorticity[i, :], 0.0),
+			particle_positions[i, :], 
+			particle_vorticities[i, :], 0.0),
 		1:np)
 	
 	pargarr = Vector{Ptr{VortexParticle3D}}(undef, np)

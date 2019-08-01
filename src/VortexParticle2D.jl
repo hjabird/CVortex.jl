@@ -339,8 +339,8 @@ function particle_visc_induced_dvort(
 end
 
 function redistribute_particles_on_grid(
-    inducing_particle_position :: Matrix{<:Real},
-	inducing_particle_vorticity :: Vector{<:Real},
+    particle_positions :: Matrix{<:Real},
+	particle_vorticities :: Vector{<:Real},
 	redistribution_function :: RedistributionFunction,
 	grid_density :: Real;
 	negligible_vort::Real=1e-4,
@@ -353,16 +353,16 @@ function redistribute_particles_on_grid(
 		") or a positive integer.")
 	@assert(0<grid_density, "Grid density must be positive. Was "*
 		string(grid_density)*".")
-	check_particle_definition_2D(inducing_particle_position, 
-		inducing_particle_vorticity)
+	check_particle_definition_2D(particle_positions, 
+		particle_vorticities)
 	convertable_to_F32(grid_density, "grid_density")
 	convertable_to_F32(negligible_vort, "negligible_vort")
 		
-	np = size(inducing_particle_position)[1]
+	np = size(particle_positions)[1]
 	inducing_particles = map(
 		i->VortexParticle2D(
-			inducing_particle_position[i, :], 
-			inducing_particle_vorticity[i], 0.0),
+			particle_positions[i, :], 
+			particle_vorticities[i], 0.0),
 		1:np)
 	
 	pargarr = Vector{Ptr{VortexParticle2D}}(undef, np)

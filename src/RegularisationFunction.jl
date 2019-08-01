@@ -59,21 +59,37 @@ struct RegularisationFunction
 end
 
 #= Functions to to get VortexFunc structures =#
+"""
+Implements singular vortex particles.
+returns RegularisationFunction struct.
+"""
 function singular_regularisation()
 	ret = ccall(("cvtx_VortFunc_singular", libcvortex), 
 		RegularisationFunction, ())
 	return ret;
 end
+"""
+Implements Winckelmans' high order algebraic regularisation.
+returns RegularisationFunction struct.
+"""
 function winckelmans_regularisation()
 	ret = ccall(("cvtx_VortFunc_winckelmans", libcvortex), 
 		RegularisationFunction, ())
 	return ret;
 end
+"""
+Implements Planetary regularisation.
+returns RegularisationFunction struct.
+"""
 function planetary_regularisation()
 	ret = ccall(("cvtx_VortFunc_planetary", libcvortex), 
 		RegularisationFunction, ())
 	return ret;
 end
+"""
+Implements Gaussian regularisation.
+returns RegularisationFunction struct.
+"""
 function gaussian_regularisation()
 	ret = ccall(("cvtx_VortFunc_gaussian", libcvortex), 
 		RegularisationFunction, ())
