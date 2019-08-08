@@ -268,6 +268,47 @@ dvort = filament_induced_dvort(
 ```
 where everything is assumed to be singular.
 
+### Contolling the accelerators / GPUs
+
+In computers with multiple GPUs (probably an iGPU + discrete GPU) it may 
+be desirable to control which GPU is being used, or in some cases to stop GPUs being used at
+all.
+
+But first, one must know how many GPUs CVortex has found:
+```
+number_of_gpus = number_of_accelerators()
+```
+where an integer is returned. 
+
+The accelerators are given an index of 1:number_of_accelerators(). Acclerators
+can then be controlled and investigated using the index. 
+
+To obtain the name one uses:
+```
+name = accelerator_name(accelerator_index)
+```
+Note that the name may not be unique among your GPUs, or even share the name of the
+product you purchased. For example, an for an AMD RX Vega 56:
+```
+julia> accelerator_name(1)
+"gfx900"
+```
+
+To investigate whether CVortex is using a GPU:
+```
+in_use = accelerator_enabled(index)
+```
+which returns 1 (true) or 0 (false).
+
+To enable an accelerator
+```
+accelerator_enable(index)
+```
+and to disable an accelerator
+```
+accelerator_disable(index)
+```
+
 ## Potentially FAQ
 
 ***Why does CVortex.jl return Float32s?***
@@ -311,4 +352,5 @@ the OpenCL kernels could not be sucessfully compiled (I've not encountered this)
 or, more likely, the OpenCL ICD loader didn't find the device's OpenCL runtime library.
 This might be because the drivers aren't properly installed. Additionally, on Windows,
 driver installers are liable to overwrite files installed by other driver installers.
-
+If you're running a virtual machine, check that the GPU is being passed through (if
+the hypervisor is even capable of doing this).
