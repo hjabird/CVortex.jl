@@ -28,7 +28,7 @@
 using BinDeps
 
 # version of cvortex package to use
-cvortexver="0.3.4"
+cvortexver="0.3.5"
 
 # binaries url prefix
 url="https://github.com/hjabird/cvortex/releases/download/$cvortexver/"
