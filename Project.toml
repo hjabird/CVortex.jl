@@ -1,7 +1,7 @@
 name = "CVortex"
 uuid = "01b28500-b454-11e9-2ad6-37799b6cb31a"
 authors = ["HJA Bird <h.bird.1@research.gla.ac.uk>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 BinDeps = "9e28174c-4ba2-5203-b857-d8d62c4213ee"
