@@ -36,7 +36,7 @@ from the multicore implementation.
 You'll need to add the package to your system.
 Run Julia and:
 ```
-(v1.1) pkg> add https://github.com/hjabird/CVortex.jl
+(v1.1) pkg> add CVortex
 ```
 remembering that to access to package environment the `]` must be used.
 Binaries for the CVortex library will automatically be downloaded.
