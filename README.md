@@ -1,6 +1,6 @@
 # CVortex.jl
 
-A Julia wrapper for GPU accelerated vortex filament and vortex particle methods of the CVortex library.
+A Julia wrapper for GPU accelerated vortex filament and vortex particle methods of the [CVortex library](https://github.com/hjabird/cvortex).
 
 ## Introduction
 
@@ -47,6 +47,8 @@ Yes! The ordinary help syntax within Julia (Type `?` within the REPL) will give 
 ```
 help?> particle_induced_velocity
 ```
+
+For examples see [CVortex.jl examples](https://github.com/hjabird/CVortexExamples.jl)
 
 ## Using CVortex.jl
 
