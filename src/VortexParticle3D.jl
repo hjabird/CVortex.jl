@@ -760,8 +760,6 @@ function redistribute_particles_on_grid(
 		float grid_density,
 		float negligible_vort);
 	=#
-	println(Base.pointer(pargarr, 1))
-	println(Base.pointer(inducing_particles, 1))
 	if max_new_particles == -1
 		max_new_particles = ccall(
 			("cvtx_P3D_redistribute_on_grid", libcvortex), 
