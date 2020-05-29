@@ -10,5 +10,5 @@ Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 
 [compat]
 julia = "1"
-BinDeps = "1"
+BinDeps = "0.8, 1"
 Compat = "3"
