@@ -36,7 +36,7 @@ url="https://github.com/hjabird/cvortex/releases/download/$cvortexver/"
 
 tagfile = "installed_vers"
 if !isfile(tagfile) || readchomp(tagfile) != "$cvortexver $WORD_SIZE"
-    @info("Installing CVortex $cvortexver library...")
+    @info("Installing CVortex $cvortexver library.")
     working_dll = true
     opencl_dll = true
     if Sys.iswindows()
@@ -50,10 +50,13 @@ if !isfile(tagfile) || readchomp(tagfile) != "$cvortexver $WORD_SIZE"
 
     try
         dlopen("libcvortex")
+		@info("Successfully linked to library using dlopen.")
         open(tagfile, "w") do f
             println(f, "$cvortexver")
         end
     catch
+		@info("Failed to successfully link to library using dlopen. Downloading "*
+			"CVortex without OpenMP.")
         opencl_dll = false    
         if Sys.iswindows()
             run(download_cmd("$url/cvortex_Win_x64_release_NoOCL.dll", "libcvortex.dll"))
@@ -62,10 +65,12 @@ if !isfile(tagfile) || readchomp(tagfile) != "$cvortexver $WORD_SIZE"
         end
         try
             dlopen("libcvortex")
+			@info("Successfully linked to library using dlopen. (No OpenCL version)")
             open(tagfile, "w") do f
                 println(f, "$cvortexver NoOpenCL")
             end
         catch
+			@info("Failed to successfully link to library using dlopen.")
             working_dll = false
         end
     end
