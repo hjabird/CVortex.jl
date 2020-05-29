@@ -70,9 +70,8 @@ module CVortex
 		try
 			dlopen(libcvortex)
 		catch
-			error("$(libcvortex) cannot be opened. Possible solutions:",
-				"\n\tRebuild package and restart julia",
-				"\n\tCheck that OpenCL is installed on your PC.\n")
+			error("$(libcvortex) cannot be opened. Consider "*
+				"rebuilding the package.")
 		end
 		# Inialisation is automatic:
 		ccall(

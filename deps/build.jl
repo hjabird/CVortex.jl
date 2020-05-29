@@ -26,6 +26,7 @@
 ##############################################################################
 
 using BinDeps
+using Libdl
 
 # version of cvortex package to use
 cvortexver="0.3.6"
@@ -36,15 +37,46 @@ url="https://github.com/hjabird/cvortex/releases/download/$cvortexver/"
 tagfile = "installed_vers"
 if !isfile(tagfile) || readchomp(tagfile) != "$cvortexver $WORD_SIZE"
     @info("Installing CVortex $cvortexver library...")
+    working_dll = true
+    opencl_dll = true
     if Sys.iswindows()
         run(download_cmd("$url/cvortex_Win_x64_release.dll", "libcvortex.dll"))
     elseif Sys.isapple()
         error("Sorry, no apple release of the binaries yet!")
+        working_dll = false
     elseif Sys.islinux()
         run(download_cmd("$url/cvortex_Linux_x64_release.so", "libcvortex.so"))
     end
-    open(tagfile, "w") do f
-        println(f, "$cvortexver")
+
+    try
+        dlopen("libcvortex")
+        open(tagfile, "w") do f
+            println(f, "$cvortexver")
+        end
+    catch
+        opencl_dll = false    
+        if Sys.iswindows()
+            run(download_cmd("$url/cvortex_Win_x64_release_NoOCL.dll", "libcvortex.dll"))
+        elseif Sys.islinux()
+            run(download_cmd("$url/cvortex_Linux_x64_release_NoOCL.so", "libcvortex.so"))
+        end
+        try
+            dlopen("libcvortex")
+            open(tagfile, "w") do f
+                println(f, "$cvortexver NoOpenCL")
+            end
+        catch
+            working_dll = false
+        end
+    end
+    
+    if !working_dll
+        error("Could not install working binary.")
+    elseif !opencl_dll
+        @warn("The OpenCL accelerated CVortex binary did not work. "*
+            "An OpenMP only (no GPU acceleration) version was installed"*
+            " instead. If you're expecting GPU acceleration to work, "*
+            "check that OpenCL is properly installed on your platform.")
     end
 else
     @info("CVortex $cvortexver is already installed.")
