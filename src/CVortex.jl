@@ -5,7 +5,7 @@
 # Provides GPU accelerated vortex particle and vortex filaments methods. A
 # wrapper for the C CVortex library.
 #
-# Copyright 2019 HJA Bird
+# Copyright 2019-2020 HJA Bird
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to 
@@ -38,6 +38,7 @@ module CVortex
 			particle_induced_dvort,
 			filament_induced_dvort,
 			particle_visc_induced_dvort,
+			particle_field_vorticity,
 			filament_induced_velocity_influence_matrix,
 			RegularisationFunction,
 			singular_regularisation,
@@ -45,6 +46,7 @@ module CVortex
 			gaussian_regularisation,
 			winckelmans_regularisation,
 			redistribute_particles_on_grid,
+			particle_pedrizzetti_relaxation,
 			RedistributionFunction,
 			lambda0_redistribution,
 			lambda1_redistribution,

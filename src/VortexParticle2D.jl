@@ -5,7 +5,7 @@
 # Part of CVortex.jl
 # Representation of a 2D vortex particle.
 #
-# Copyright 2019 HJA Bird
+# Copyright 2019-2020 HJA Bird
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to 

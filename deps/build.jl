@@ -4,7 +4,7 @@
 #
 # Build for cvortex.jl. Downloads correct precompiled binary.
 #
-# Copyright 2019 HJA Bird
+# Copyright 2019-2020 HJA Bird
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to 
@@ -28,7 +28,7 @@
 using BinDeps
 
 # version of cvortex package to use
-cvortexver="0.3.5"
+cvortexver="0.3.6"
 
 # binaries url prefix
 url="https://github.com/hjabird/cvortex/releases/download/$cvortexver/"

@@ -5,7 +5,7 @@
 # Part of CVortex.jl
 # Representation of a vortex filament.
 #
-# Copyright 2019 HJA Bird
+# Copyright 2019-2020 HJA Bird
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to 
@@ -229,6 +229,8 @@ function filament_induced_dvort(
 
     check_filament_definition(
         filament_start_coord, filament_end_coord, filament_strength)
+    check_particle_definition_3D(induced_particle_position, 
+        induced_particle_vorticity)
 
     inducing_filament = VortexFilament(filament_start_coord, filament_end_coord, 
         filament_strength)
@@ -259,6 +261,8 @@ function filament_induced_dvort(
 
     check_filament_definition(
         filament_start_coords, filament_end_coords, filament_strengths)
+    check_particle_definition_3D(induced_particle_position, 
+        induced_particle_vorticity)
 
     ni = size(filament_end_coords)[1]
     inducing_filaments = map(
@@ -296,6 +300,8 @@ function filament_induced_dvort(
 
     check_filament_definition(
         filament_start_coords, filament_end_coords, filament_strengths)
+    check_particle_definition_3D(induced_particle_position, 
+        induced_particle_vorticity)
 
     ni = size(filament_end_coords)[1]
     np = size(induced_particle_position)[1]
