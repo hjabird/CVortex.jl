@@ -192,20 +192,22 @@ function particle_induced_velocity(
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
 	ret =Vec3f(0., 0., 0.)
-	#=
-	CVTX_EXPORT bsv_V3f cvtx_P3D_M2S_vel(
-		const cvtx_P3D **array_start,
-		const int num_particles,
-		const bsv_V3f mes_point,
-		const cvtx_VortFunc *kernel,
-		float regularisation_radius);
-	=#		
-	ret = ccall(
-			("cvtx_P3D_M2S_vel", libcvortex), 
-			Vec3f, 
-			(Ref{Ptr{VortexParticle3D}}, Cint, Vec3f, 
-				Ref{RegularisationFunction}, Cfloat),
-			pargarr, np, mes_pnt, kernel,	regularisation_radius)
+	GC.@preserve pargarr inducing_particles begin
+		#=
+		CVTX_EXPORT bsv_V3f cvtx_P3D_M2S_vel(
+			const cvtx_P3D **array_start,
+			const int num_particles,
+			const bsv_V3f mes_point,
+			const cvtx_VortFunc *kernel,
+			float regularisation_radius);
+		=#		
+		ret = ccall(
+				("cvtx_P3D_M2S_vel", libcvortex), 
+				Vec3f, 
+				(Ref{Ptr{VortexParticle3D}}, Cint, Vec3f, 
+					Ref{RegularisationFunction}, Cfloat),
+				pargarr, np, mes_pnt, kernel,	regularisation_radius)
+	end
 	return [ret.x, ret.y, ret.z]
 end
 
@@ -235,22 +237,24 @@ function particle_induced_velocity(
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
 	ret = Vector{Vec3f}(undef, ni)
-	#=
-	CVTX_EXPORT void cvtx_P3D_M2M_vel(
-		const cvtx_P3D **array_start,
-		const int num_particles,
-		const bsv_V3f *mes_start,
-		const int num_mes,
-		bsv_V3f *result_array,
-		const cvtx_VortFunc *kernel,
-		float regularisation_radius);
-	=#	
-	ccall(
-		("cvtx_P3D_M2M_vel", libcvortex), 
-		Cvoid, 
-		(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{Vec3f}, 
-			Cint, Ref{Vec3f}, Ref{RegularisationFunction}, Cfloat),
-		pargarr, np, mes_pnt, ni, ret, kernel, regularisation_radius)
+	GC.@preserve pargarr inducing_particles begin
+		#=
+		CVTX_EXPORT void cvtx_P3D_M2M_vel(
+			const cvtx_P3D **array_start,
+			const int num_particles,
+			const bsv_V3f *mes_start,
+			const int num_mes,
+			bsv_V3f *result_array,
+			const cvtx_VortFunc *kernel,
+			float regularisation_radius);
+		=#	
+		ccall(
+			("cvtx_P3D_M2M_vel", libcvortex), 
+			Cvoid, 
+			(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{Vec3f}, 
+				Cint, Ref{Vec3f}, Ref{RegularisationFunction}, Cfloat),
+			pargarr, np, mes_pnt, ni, ret, kernel, regularisation_radius)
+	end
 	return Matrix{Float32}(ret)
 end
 
@@ -361,21 +365,23 @@ function particle_induced_dvort(
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
 	ret = Vec3f(0., 0., 0.)
-	#=
-	CVTX_EXPORT bsv_V3f cvtx_P3D_M2S_dvort(
-		const cvtx_P3D **array_start,
-		const int num_particles,
-		const cvtx_P3D *induced_particle,
-		const cvtx_VortFunc *kernel,
-		float regularisation_radius);
-	=#
-	ret = ccall(
-			("cvtx_P3D_M2S_dvort", libcvortex), 
-			Vec3f, 
-			(Ref{Ptr{VortexParticle3D}}, Cint, Ref{VortexParticle3D}, 
-				Ref{RegularisationFunction}, Cfloat),
-			pargarr, np, induced_particle, kernel, regularisation_radius
-			)
+	GC.@preserve pargarr inducing_particles begin
+		#=
+		CVTX_EXPORT bsv_V3f cvtx_P3D_M2S_dvort(
+			const cvtx_P3D **array_start,
+			const int num_particles,
+			const cvtx_P3D *induced_particle,
+			const cvtx_VortFunc *kernel,
+			float regularisation_radius);
+		=#
+		ret = ccall(
+				("cvtx_P3D_M2S_dvort", libcvortex), 
+				Vec3f, 
+				(Ref{Ptr{VortexParticle3D}}, Cint, Ref{VortexParticle3D}, 
+					Ref{RegularisationFunction}, Cfloat),
+				pargarr, np, induced_particle, kernel, regularisation_radius
+				)
+	end
 	return Vector{Float32}(ret)
 end
 
@@ -415,24 +421,26 @@ function particle_induced_dvort(
 		indarg[i] = Base.pointer(induced_particles, i)
 	end
 	ret = Vector{Vec3f}(undef, ni)
-	#=
-	CVTX_EXPORT void cvtx_P3D_M2M_dvort(
-		const cvtx_P3D **array_start,
-		const int num_particles,
-		const cvtx_P3D **induced_start,
-		const int num_induced,
-		bsv_V3f *result_array,
-		const cvtx_VortFunc *kernel,
-		float regularisation_radius);
-	=#
-	ccall(
-		("cvtx_P3D_M2M_dvort", libcvortex), 
-		Cvoid, 
-		(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{Ptr{VortexParticle3D}}, Cint, 
-			Ptr{Vec3f}, Ref{RegularisationFunction}, Cfloat),
-		pargarr, length(inducing_particles), indarg, length(induced_particles),
-			ret, kernel, regularisation_radius
-		)
+	GC.@preserve pargarr inducing_particles indarg induced_particles begin
+		#=
+		CVTX_EXPORT void cvtx_P3D_M2M_dvort(
+			const cvtx_P3D **array_start,
+			const int num_particles,
+			const cvtx_P3D **induced_start,
+			const int num_induced,
+			bsv_V3f *result_array,
+			const cvtx_VortFunc *kernel,
+			float regularisation_radius);
+		=#
+		ccall(
+			("cvtx_P3D_M2M_dvort", libcvortex), 
+			Cvoid, 
+			(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{Ptr{VortexParticle3D}}, Cint, 
+				Ptr{Vec3f}, Ref{RegularisationFunction}, Cfloat),
+			pargarr, length(inducing_particles), indarg, length(induced_particles),
+				ret, kernel, regularisation_radius
+			)
+	end
 	return Matrix{Float32}(ret)
 end
 
@@ -603,23 +611,25 @@ function particle_visc_induced_dvort(
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
 	ret = Vec3f(0., 0., 0.)
-	#=
-	CVTX_EXPORT bsv_V3f cvtx_P3D_M2S_visc_dvort(
-		const cvtx_P3D **array_start,
-		const int num_particles,
-		const cvtx_P3D *induced_particle,
-		const cvtx_VortFunc *kernel,
-		float regularisation_radius,
-		float kinematic_visc);
-	=#
-	ret = ccall(
-			("cvtx_P3D_M2S_visc_dvort", libcvortex), 
-			Vec3f, 
-			(Ref{Ptr{VortexParticle3D}}, Cint, Ref{VortexParticle3D}, 
-				Ref{RegularisationFunction}, Cfloat, Cfloat),
-			pargarr, np, induced_particle, kernel, 
-				regularisation_radius, kinematic_visc
-			)
+	GC.@preserve pargarr inducing_particles begin
+		#=
+		CVTX_EXPORT bsv_V3f cvtx_P3D_M2S_visc_dvort(
+			const cvtx_P3D **array_start,
+			const int num_particles,
+			const cvtx_P3D *induced_particle,
+			const cvtx_VortFunc *kernel,
+			float regularisation_radius,
+			float kinematic_visc);
+		=#
+		ret = ccall(
+				("cvtx_P3D_M2S_visc_dvort", libcvortex), 
+				Vec3f, 
+				(Ref{Ptr{VortexParticle3D}}, Cint, Ref{VortexParticle3D}, 
+					Ref{RegularisationFunction}, Cfloat, Cfloat),
+				pargarr, np, induced_particle, kernel, 
+					regularisation_radius, kinematic_visc
+				)
+	end
 	return Vector{Float32}(ret)
 end
 
@@ -664,25 +674,27 @@ function particle_visc_induced_dvort(
 		indarg[i] = Base.pointer(induced_particles, i)
 	end
 	ret = Vector{Vec3f}(undef, ni)
-	#=
-	CVTX_EXPORT void cvtx_P3D_M2M_visc_dvort(
-		const cvtx_P3D **array_start,
-		const int num_particles,
-		const cvtx_P3D **induced_start,
-		const int num_induced,
-		bsv_V3f *result_array,
-		const cvtx_VortFunc *kernel,
-		float regularisation_radius,
-		float kinematic_visc);
-	=#
-	ccall(
-		("cvtx_P3D_M2M_visc_dvort", libcvortex), 
-		Cvoid, 
-		(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{Ptr{VortexParticle3D}}, Cint, 
-			Ptr{Vec3f}, Ref{RegularisationFunction}, Cfloat, Cfloat),
-		pargarr, length(inducing_particles), indarg, length(induced_particles),
-			ret, kernel, regularisation_radius, kinematic_visc
-		)
+	GC.@preserve pargarr inducing_particles indarg induced_particles begin
+		#=
+		CVTX_EXPORT void cvtx_P3D_M2M_visc_dvort(
+			const cvtx_P3D **array_start,
+			const int num_particles,
+			const cvtx_P3D **induced_start,
+			const int num_induced,
+			bsv_V3f *result_array,
+			const cvtx_VortFunc *kernel,
+			float regularisation_radius,
+			float kinematic_visc);
+		=#
+		ccall(
+			("cvtx_P3D_M2M_visc_dvort", libcvortex), 
+			Cvoid, 
+			(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{Ptr{VortexParticle3D}}, Cint, 
+				Ptr{Vec3f}, Ref{RegularisationFunction}, Cfloat, Cfloat),
+			pargarr, length(inducing_particles), indarg, length(induced_particles),
+				ret, kernel, regularisation_radius, kinematic_visc
+			)
+	end
 	return Matrix{Float32}(ret)
 end
 
@@ -830,22 +842,24 @@ function particle_field_vorticity(
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
 	ret = Vector{Vec3f}(undef, ni)
-	#=
-	CVTX_EXPORT void cvtx_P3D_M2M_vort(
-		const cvtx_P3D** array_start,
-		const int num_particles,
-		const bsv_V3f* mes_start,
-		const int num_mes,
-		bsv_V3f* result_array,
-		const cvtx_VortFunc* kernel,
-		float regularisation_radius);
-	=#	
-	ccall(
-		("cvtx_P3D_M2M_vort", libcvortex), 
-		Cvoid, 
-		(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{Vec3f}, 
-			Cint, Ref{Vec3f}, Ref{RegularisationFunction}, Cfloat),
-		pargarr, np, mes_pnt, ni, ret, kernel, regularisation_radius)
+	GC.@preserve pargarr inducing_particles begin
+		#=
+		CVTX_EXPORT void cvtx_P3D_M2M_vort(
+			const cvtx_P3D** array_start,
+			const int num_particles,
+			const bsv_V3f* mes_start,
+			const int num_mes,
+			bsv_V3f* result_array,
+			const cvtx_VortFunc* kernel,
+			float regularisation_radius);
+		=#	
+		ccall(
+			("cvtx_P3D_M2M_vort", libcvortex), 
+			Cvoid, 
+			(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{Vec3f}, 
+				Cint, Ref{Vec3f}, Ref{RegularisationFunction}, Cfloat),
+			pargarr, np, mes_pnt, ni, ret, kernel, regularisation_radius)
+	end
 	return Matrix{Float32}(ret)
 end
 
@@ -915,34 +929,37 @@ function redistribute_particles_on_grid(
 	for i = 1 : length(pargarr)
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
-	#=
-	CVTX_EXPORT int cvtx_P3D_redistribute_on_grid(
-		const cvtx_P3D **input_array_start,
-		const int n_input_particles,
-		cvtx_P3D *output_particles,		/* input is &(*cvtx_P3D) to write to */
-		int max_output_particles,		/* Set to resultant num particles.   */
-		const cvtx_RedistFunc *redistributor,
-		float grid_density,
-		float negligible_vort);
-	=#
-	if max_new_particles == -1
-		max_new_particles = ccall(
+	
+	GC.@preserve pargarr inducing_particles begin
+		#=
+		CVTX_EXPORT int cvtx_P3D_redistribute_on_grid(
+			const cvtx_P3D **input_array_start,
+			const int n_input_particles,
+			cvtx_P3D *output_particles,	/* input is &(*cvtx_P3D) to write to */
+			int max_output_particles,	/* Set to resultant num particles.   */
+			const cvtx_RedistFunc *redistributor,
+			float grid_density,
+			float negligible_vort);
+		=#
+		if max_new_particles == -1
+			max_new_particles = ccall(
+				("cvtx_P3D_redistribute_on_grid", libcvortex), 
+				Cint, 
+				(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{VortexParticle3D}, 
+					Cint, Ref{RedistributionFunction}, Cfloat, Cfloat),
+				pargarr, np, C_NULL, 1, redistribution_function, 
+				grid_density, negligible_vort)
+		end
+
+		ret = Vector{VortexParticle3D}(undef, max_new_particles)
+		nnp = ccall(
 			("cvtx_P3D_redistribute_on_grid", libcvortex), 
 			Cint, 
 			(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{VortexParticle3D}, 
 				Cint, Ref{RedistributionFunction}, Cfloat, Cfloat),
-			pargarr, np, C_NULL, 1, redistribution_function, 
+			pargarr, np, ret, max_new_particles, redistribution_function, 
 			grid_density, negligible_vort)
 	end
-
-	ret = Vector{VortexParticle3D}(undef, max_new_particles)
-	nnp = ccall(
-		("cvtx_P3D_redistribute_on_grid", libcvortex), 
-		Cint, 
-		(Ptr{Ptr{VortexParticle3D}}, Cint, Ptr{VortexParticle3D}, 
-			Cint, Ref{RedistributionFunction}, Cfloat, Cfloat),
-		pargarr, np, ret, max_new_particles, redistribution_function, 
-		grid_density, negligible_vort)
 
 	# nnp is the number of new particles.
 	nvorts = zeros(Float32, nnp, 3)
@@ -972,7 +989,7 @@ vortex particle vorticity field.
 # Arguments
 - `particle_positions` : Position of particles to be redistributed.
 - `particle_vorticities` : Vorticity of particles to be redistributed
-- `relaxation_parameter :: Real` : A tunable parameter equal to delta t * f where f is the parameter.
+- `relaxation_parameter :: Real` : A tuneable parameter equal to delta t * f where f is the parameter. Should in [0, 1], which corresponds to the strength of the relaxation. 1 is very diffusive. 
 - `kernel :: RegularisationFunction` : Regularisation function (winckelmans_regularisation() for example)
 - `regularisation_radius :: Real` : Regularisation distance
 
@@ -987,6 +1004,12 @@ function particle_pedrizzetti_relaxation(
 	kernel :: RegularisationFunction,
 	regularisation_radius :: Real)
 
+	@assert(relaxation_parameter >= 0., "Relaxation parameter should be more "*
+		"than or equal to 0. 0 results in no relaxation. Actual input "*
+		"was "*string(relaxation_parameter)*".")
+	@assert(relaxation_parameter <= 1., "Relaxation parameter should be less "*
+		"than or equal to 1. 1 results in complete relaxation. Actual input "*
+		"was "*string(relaxation_parameter)*".")
 	check_particle_definition_3D(particle_positions, 
 		particle_vorticities)
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
@@ -1003,20 +1026,22 @@ function particle_pedrizzetti_relaxation(
 	for i = 1 : length(pargarr)
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
-	#=
-	CVTX_EXPORT void cvtx_P3D_pedrizzetti_relaxation(
-		cvtx_P3D** input_array_start,
-		const int n_input_particles,
-		float fdt,
-		const cvtx_VortFunc* kernel,
-		float regularisation_radius);
-	=#
-	ccall(
-		("cvtx_P3D_pedrizzetti_relaxation", libcvortex), 
-		Cvoid, 
-		(Ptr{Ptr{VortexParticle3D}}, Cint, Cfloat, 
-			Ref{RegularisationFunction}, Cfloat),
-		pargarr, np, relaxation_parameter, kernel, regularisation_radius)
+	GC.@preserve pargarr inducing_particles begin
+		#=
+		CVTX_EXPORT void cvtx_P3D_pedrizzetti_relaxation(
+			cvtx_P3D** input_array_start,
+			const int n_input_particles,
+			float fdt,
+			const cvtx_VortFunc* kernel,
+			float regularisation_radius);
+		=#
+		ccall(
+			("cvtx_P3D_pedrizzetti_relaxation", libcvortex), 
+			Cvoid, 
+			(Ptr{Ptr{VortexParticle3D}}, Cint, Cfloat, 
+				Ref{RegularisationFunction}, Cfloat),
+			pargarr, np, relaxation_parameter, kernel, regularisation_radius)
+	end
 	ret = zeros(Float32, np, 3)
 	for i = 1 : np
 		ret[i, :] = Vector{Float32}(inducing_particles[i].vorticity)

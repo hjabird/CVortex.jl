@@ -114,20 +114,22 @@ function particle_induced_velocity(
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
 	ret =Vec2f(0., 0.)
-	#=
-    CVTX_EXPORT bsv_V2f cvtx_P2D_M2S_vel(
-        const cvtx_P2D **array_start,
-        const int num_particles,
-        const bsv_V2f mes_point,
-        const cvtx_VortFunc *kernel,
-        float regularisation_radius);
-	=#		
-	ret = ccall(
-			("cvtx_P2D_M2S_vel", libcvortex), 
-			Vec2f, 
-			(Ref{Ptr{VortexParticle2D}}, Cint, Vec2f, 
-				Ref{RegularisationFunction}, Cfloat),
-			pargarr, np, mes_pnt, kernel,	regularisation_radius)
+	GC.@preserve pargarr inducing_particles begin
+		#=
+		CVTX_EXPORT bsv_V2f cvtx_P2D_M2S_vel(
+			const cvtx_P2D **array_start,
+			const int num_particles,
+			const bsv_V2f mes_point,
+			const cvtx_VortFunc *kernel,
+			float regularisation_radius);
+		=#		
+		ret = ccall(
+				("cvtx_P2D_M2S_vel", libcvortex), 
+				Vec2f, 
+				(Ref{Ptr{VortexParticle2D}}, Cint, Vec2f, 
+					Ref{RegularisationFunction}, Cfloat),
+				pargarr, np, mes_pnt, kernel,	regularisation_radius)
+	end
 	return [ret.x, ret.y]
 end
 
@@ -157,22 +159,24 @@ function particle_induced_velocity(
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
 	ret = Vector{Vec2f}(undef, ni)
-	#=
-    CVTX_EXPORT void cvtx_P2D_M2M_vel(
-        const cvtx_P2D **array_start,
-        const int num_particles,
-        const bsv_V2f *mes_start,
-        const int num_mes,
-        bsv_V2f *result_array,
-        const cvtx_VortFunc *kernel,
-        float regularisation_radius);
-	=#	
-	ccall(
-		("cvtx_P2D_M2M_vel", libcvortex), 
-		Cvoid, 
-		(Ptr{Ptr{VortexParticle2D}}, Cint, Ptr{Vec2f}, 
-			Cint, Ref{Vec2f}, Ref{RegularisationFunction}, Cfloat),
-		pargarr, np, mes_pnt, ni, ret, kernel, regularisation_radius)
+	GC.@preserve pargarr inducing_particles begin
+		#=
+		CVTX_EXPORT void cvtx_P2D_M2M_vel(
+			const cvtx_P2D **array_start,
+			const int num_particles,
+			const bsv_V2f *mes_start,
+			const int num_mes,
+			bsv_V2f *result_array,
+			const cvtx_VortFunc *kernel,
+			float regularisation_radius);
+		=#	
+		ccall(
+			("cvtx_P2D_M2M_vel", libcvortex), 
+			Cvoid, 
+			(Ptr{Ptr{VortexParticle2D}}, Cint, Ptr{Vec2f}, 
+				Cint, Ref{Vec2f}, Ref{RegularisationFunction}, Cfloat),
+			pargarr, np, mes_pnt, ni, ret, kernel, regularisation_radius)
+	end
 	return Matrix{Float32}(ret)
 end
 
@@ -255,23 +259,25 @@ function particle_visc_induced_dvort(
 	for i = 1 : length(pargarr)
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
-	#=
-	CVTX_EXPORT float cvtx_P2D_M2S_visc_dvort(
-		const cvtx_P2D **array_start,
-		const int num_particles,
-		const cvtx_P2D *induced_particle,
-		const cvtx_VortFunc *kernel,
-		float regularisation_radius,
-		float kinematic_visc);
-	=#
-	ret = ccall(
-		("cvtx_P2D_M2S_visc_dvort", libcvortex), 
-		Cfloat, 
-		(Ptr{Ptr{VortexParticle2D}}, Cint, Ptr{VortexParticle2D}, 
-			Ref{RegularisationFunction}, Cfloat, Cfloat),
-		pargarr, length(inducing_particles), induced_particle,
-			kernel, regularisation_radius, kinematic_visc
-		)
+	GC.@preserve pargarr inducing_particles begin
+		#=
+		CVTX_EXPORT float cvtx_P2D_M2S_visc_dvort(
+			const cvtx_P2D **array_start,
+			const int num_particles,
+			const cvtx_P2D *induced_particle,
+			const cvtx_VortFunc *kernel,
+			float regularisation_radius,
+			float kinematic_visc);
+		=#
+		ret = ccall(
+			("cvtx_P2D_M2S_visc_dvort", libcvortex), 
+			Cfloat, 
+			(Ptr{Ptr{VortexParticle2D}}, Cint, Ptr{VortexParticle2D}, 
+				Ref{RegularisationFunction}, Cfloat, Cfloat),
+			pargarr, length(inducing_particles), induced_particle,
+				kernel, regularisation_radius, kinematic_visc
+			)
+	end
 	return ret
 end
 
@@ -316,25 +322,27 @@ function particle_visc_induced_dvort(
 		indarg[i] = Base.pointer(induced_particles, i)
 	end
 	ret = Vector{Float32}(undef, ni)
-	#=
-	CVTX_EXPORT void cvtx_P2D_M2M_visc_dvort(
-		const cvtx_P2D **array_start,
-		const int num_particles,
-		const cvtx_P2D **induced_start,
-		const int num_induced,
-		float *result_array,
-		const cvtx_VortFunc *kernel,
-		float regularisation_radius,
-		float kinematic_visc)
-	=#
-	ccall(
-		("cvtx_P2D_M2M_visc_dvort", libcvortex), 
-		Cvoid, 
-		(Ptr{Ptr{VortexParticle2D}}, Cint, Ptr{Ptr{VortexParticle2D}}, Cint, 
-			Ptr{Float32}, Ref{RegularisationFunction}, Cfloat, Cfloat),
-		pargarr, length(inducing_particles), indarg, length(induced_particles),
-			ret, kernel, regularisation_radius, kinematic_visc
-		)
+	GC.@preserve pargarr inducing_particles indarg induced_particles begin
+		#=
+		CVTX_EXPORT void cvtx_P2D_M2M_visc_dvort(
+			const cvtx_P2D **array_start,
+			const int num_particles,
+			const cvtx_P2D **induced_start,
+			const int num_induced,
+			float *result_array,
+			const cvtx_VortFunc *kernel,
+			float regularisation_radius,
+			float kinematic_visc)
+		=#
+		ccall(
+			("cvtx_P2D_M2M_visc_dvort", libcvortex), 
+			Cvoid, 
+			(Ptr{Ptr{VortexParticle2D}}, Cint, Ptr{Ptr{VortexParticle2D}}, Cint, 
+				Ptr{Float32}, Ref{RegularisationFunction}, Cfloat, Cfloat),
+			pargarr, length(inducing_particles), indarg, length(induced_particles),
+				ret, kernel, regularisation_radius, kinematic_visc
+			)
+	end
 	return ret
 end
 
@@ -369,34 +377,36 @@ function redistribute_particles_on_grid(
 	for i = 1 : length(pargarr)
 		pargarr[i] = Base.pointer(inducing_particles, i)
 	end
-	#=
-	CVTX_EXPORT int cvtx_P2D_redistribute_on_grid(
-		const cvtx_P2D **input_array_start,
-		const int n_input_particles,
-		cvtx_P2D *output_particles,		/* input is &(*cvtx_P2D) to write to */
-		int max_output_particles,		/* Set to resultant num particles.   */
-		const cvtx_RedistFunc *redistributor,
-		float grid_density,
-		float negligible_vort)
-	=#
-	if max_new_particles == -1
-		max_new_particles = ccall(
+	GC.@preserve pargarr inducing_particles begin
+		#=
+		CVTX_EXPORT int cvtx_P2D_redistribute_on_grid(
+			const cvtx_P2D **input_array_start,
+			const int n_input_particles,
+			cvtx_P2D *output_particles,		/* input is &(*cvtx_P2D) to write to */
+			int max_output_particles,		/* Set to resultant num particles.   */
+			const cvtx_RedistFunc *redistributor,
+			float grid_density,
+			float negligible_vort)
+		=#
+		if max_new_particles == -1
+			max_new_particles = ccall(
+				("cvtx_P2D_redistribute_on_grid", libcvortex), 
+				Cint, 
+				(Ptr{Ptr{VortexParticle2D}}, Cint, Ptr{VortexParticle2D}, 
+					Cint, Ref{RedistributionFunction}, Cfloat, Cfloat),
+				pargarr, np, C_NULL, 1, redistribution_function, 
+				grid_density, negligible_vort)
+		end
+
+		ret = Vector{VortexParticle2D}(undef, max_new_particles)
+		nnp = ccall(
 			("cvtx_P2D_redistribute_on_grid", libcvortex), 
 			Cint, 
 			(Ptr{Ptr{VortexParticle2D}}, Cint, Ptr{VortexParticle2D}, 
 				Cint, Ref{RedistributionFunction}, Cfloat, Cfloat),
-			pargarr, np, C_NULL, 1, redistribution_function, 
+			pargarr, np, ret, max_new_particles, redistribution_function, 
 			grid_density, negligible_vort)
 	end
-
-	ret = Vector{VortexParticle2D}(undef, max_new_particles)
-	nnp = ccall(
-		("cvtx_P2D_redistribute_on_grid", libcvortex), 
-		Cint, 
-		(Ptr{Ptr{VortexParticle2D}}, Cint, Ptr{VortexParticle2D}, 
-			Cint, Ref{RedistributionFunction}, Cfloat, Cfloat),
-		pargarr, np, ret, max_new_particles, redistribution_function, 
-		grid_density, negligible_vort)
 
 	# nnp is the number of new particles.
 	nvorts = zeros(Float32, nnp)
