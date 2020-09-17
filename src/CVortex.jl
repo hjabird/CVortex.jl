@@ -89,5 +89,6 @@ module CVortex
 	include("VortexParticle3D.jl")
 	include("VortexParticle2D.jl")
 	include("VortexFilament.jl")
+	include("CVortexInfo.jl")
 
 end #module
