@@ -62,7 +62,8 @@ function particle_induced_velocity(
     inducing_particle_vorticity :: Real,
 	measurement_point :: Vector{<:Real},
 	kernel :: RegularisationFunction,
-	regularisation_radius :: Real)
+	regularisation_radius :: Real
+	) :: Vector{Float32}
 	
 	check_particle_definition_2D(inducing_particle_position, 
 		inducing_particle_vorticity)
@@ -90,11 +91,49 @@ function particle_induced_velocity(
 end
 
 function particle_induced_velocity(
+    inducing_particle_position :: Vector{<:Real},
+    inducing_particle_vorticity :: Real,
+	measurement_points :: Matrix{<:Real},
+	kernel :: RegularisationFunction,
+	regularisation_radius :: Real
+	) :: Matrix{Float32}
+	
+	check_particle_definition_2D(inducing_particle_position, 
+		inducing_particle_vorticity)
+	convertable_to_Vec2f_vect(measurement_points, "measurement_points")
+	convertable_to_F32(regularisation_radius, "regularisation_radius")
+	ni = size(measurement_points)[1]
+    mes_pnt = map(i->Vec2f(measurement_points[i,:]), 1:ni)
+    
+    inducing_particle = VortexParticle2D(
+        inducing_particle_position, inducing_particle_vorticity, 0.0)
+	ret = Vector{Vec2f}(undef, ni)
+	#=
+	CVTX_EXPORT void cvtx_P2D_S2M_vel(
+		const cvtx_P2D* self,
+		const bsv_V2f* mes_start,
+		const int num_mes,
+		bsv_V2f* result_array,
+		const cvtx_VortFunc* kernel,
+		float regularisation_radius);
+	=#
+	ccall(
+		("cvtx_P2D_S2M_vel", libcvortex), 
+		Cvoid, 
+		(Ref{VortexParticle2D}, Ptr{Vec2f}, Cint, 
+		Ref{Vec2f}, Ref{RegularisationFunction}, Cfloat),
+		inducing_particle, mes_pnt, ni, ret, kernel, regularisation_radius
+		)
+	return Matrix{Float32}(ret)
+end
+
+function particle_induced_velocity(
     inducing_particle_position :: Matrix{<:Real},
     inducing_particle_vorticity :: Vector{<:Real},
 	measurement_point :: Vector{<:Real},
 	kernel :: RegularisationFunction,
-	regularisation_radius :: Real)
+	regularisation_radius :: Real
+	) :: Vector{Float32}
     
 	check_particle_definition_2D(inducing_particle_position, 
 		inducing_particle_vorticity)
@@ -138,7 +177,8 @@ function particle_induced_velocity(
     inducing_particle_vorticity :: Vector{<:Real},
 	measurement_points :: Matrix{<:Real},
 	kernel :: RegularisationFunction,
-	regularisation_radius :: Real)
+	regularisation_radius :: Real
+	) :: Matrix{Float32}
     
 	check_particle_definition_2D(inducing_particle_position, 
 		inducing_particle_vorticity)
@@ -189,7 +229,8 @@ function particle_visc_induced_dvort(
 	induced_particle_area :: Real,
 	kernel :: RegularisationFunction,
 	regularisation_radius :: Real,
-	kinematic_visc :: Real)
+	kinematic_visc :: Real
+	) :: Float32
 		
 	check_particle_definition_2D(inducing_particle_position, 
 		inducing_particle_vorticity, inducing_particle_area)
@@ -204,8 +245,8 @@ function particle_visc_induced_dvort(
 			inducing_particle_position, 
 			inducing_particle_vorticity, inducing_particle_area)
 	induced_particle = VortexParticle2D(
-			inducing_particle_position, 
-			inducing_particle_vorticity, induced_particle_area)
+			induced_particle_position, 
+			induced_particle_vorticity, induced_particle_area)
 
 	#=
 	CVTX_EXPORT float cvtx_P2D_S2S_visc_dvort(
@@ -227,6 +268,64 @@ function particle_visc_induced_dvort(
 end
 
 function particle_visc_induced_dvort(
+    inducing_particle_position :: Vector{<:Real},
+	inducing_particle_vorticity :: Real,
+	inducing_particle_area :: Real,
+    induced_particle_position :: Matrix{<:Real},
+	induced_particle_vorticity :: Vector{<:Real},
+	induced_particle_area :: Vector{<:Real},
+	kernel :: RegularisationFunction,
+	regularisation_radius :: Real,
+	kinematic_visc :: Real
+	) :: Vector{Float32}
+		
+	check_particle_definition_2D(inducing_particle_position, 
+		inducing_particle_vorticity, inducing_particle_area)
+	check_particle_definition_2D(induced_particle_position, 
+		induced_particle_vorticity, induced_particle_area)
+	convertable_to_F32(regularisation_radius, "regularisation_radius")
+	@assert(kernel.eta_2D!=Cvoid, "You cannot use this regularisation "*
+		"function for viscous simulations. Consider Winckelmans or Gaussian.")
+	
+	ni = size(induced_particle_position)[1]
+	inducing_particle = VortexParticle2D(
+			inducing_particle_position, 
+			inducing_particle_vorticity, inducing_particle_area)
+	induced_particles = map(
+		i->VortexParticle2D(
+			induced_particle_position[i, :], 
+			induced_particle_vorticity[i], induced_particle_area[i]),
+		1:ni)
+	indarg = Vector{Ptr{VortexParticle2D}}(undef, ni)
+	for i = 1 : length(indarg)
+		indarg[i] = Base.pointer(induced_particles, i)
+	end
+	ret = Vector{Float32}(undef, ni)
+			
+	GC.@preserve inducing_particle indarg induced_particles begin
+		#=
+		CVTX_EXPORT void cvtx_P2D_S2M_visc_dvort(
+			const cvtx_P2D* self,
+			const cvtx_P2D** induced_start,
+			const int num_induced,
+			float* result_array,
+			const cvtx_VortFunc* kernel,
+			float regularisation_radius,
+			float kinematic_visc);
+		=#
+		ccall(
+			("cvtx_P2D_S2M_visc_dvort", libcvortex), 
+			Cvoid, 
+			(Ref{VortexParticle2D}, Ptr{Ptr{VortexParticle2D}}, Cint, 
+				Ptr{Float32}, Ref{RegularisationFunction}, Cfloat, Cfloat),
+			inducing_particle, indarg, ni, ret,
+				kernel, regularisation_radius, kinematic_visc
+			)
+	end
+	return ret
+end
+
+function particle_visc_induced_dvort(
     inducing_particle_position :: Matrix{<:Real},
 	inducing_particle_vorticity :: Vector{<:Real},
 	inducing_particle_area :: Vector{<:Real},
@@ -235,7 +334,8 @@ function particle_visc_induced_dvort(
 	induced_particle_area :: Real,
 	kernel :: RegularisationFunction,
 	regularisation_radius :: Real,
-	kinematic_visc :: Real)
+	kinematic_visc :: Real
+	) :: Float32
 		
 	check_particle_definition_2D(inducing_particle_position, 
 		inducing_particle_vorticity, inducing_particle_area)
@@ -252,8 +352,8 @@ function particle_visc_induced_dvort(
 			inducing_particle_vorticity[i], inducing_particle_area[i]),
 		1:np)
 	induced_particle = VortexParticle2D(
-			inducing_particle_position, 
-			inducing_particle_vorticity, induced_particle_area)
+			induced_particle_position, 
+			induced_particle_vorticity, induced_particle_area)
 
 	pargarr = Vector{Ptr{VortexParticle2D}}(undef, length(inducing_particles))
 	for i = 1 : length(pargarr)
@@ -290,7 +390,8 @@ function particle_visc_induced_dvort(
 	induced_particle_area :: Vector{<:Real},
 	kernel :: RegularisationFunction,
 	regularisation_radius :: Real,
-	kinematic_visc :: Real)
+	kinematic_visc :: Real
+	) :: Vector{Float32}
 		
 	check_particle_definition_2D(inducing_particle_position, 
 		inducing_particle_vorticity, inducing_particle_area)
@@ -309,8 +410,8 @@ function particle_visc_induced_dvort(
 		1:np)
 	induced_particles = map(
 		i->VortexParticle2D(
-			inducing_particle_position[i, :], 
-			inducing_particle_vorticity[i], induced_particle_area[i]),
+			induced_particle_position[i, :], 
+			induced_particle_vorticity[i], induced_particle_area[i]),
 		1:ni)
 
 	pargarr = Vector{Ptr{VortexParticle2D}}(undef, length(inducing_particles))
