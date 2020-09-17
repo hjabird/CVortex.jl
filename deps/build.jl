@@ -29,7 +29,7 @@ using BinDeps
 using Libdl
 
 # version of cvortex package to use
-cvortexver="0.3.6"
+cvortexver="0.3.7"
 
 # binaries url prefix
 url="https://github.com/hjabird/cvortex/releases/download/$cvortexver/"
