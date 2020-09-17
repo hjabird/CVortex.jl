@@ -40,11 +40,13 @@ if !isfile(tagfile) || readchomp(tagfile) != "$cvortexver $WORD_SIZE"
     working_dll = true
     opencl_dll = true
     if Sys.iswindows()
+		@info("Downloading $url/cvortex_Win_x64_release.dll")
         run(download_cmd("$url/cvortex_Win_x64_release.dll", "libcvortex.dll"))
     elseif Sys.isapple()
         error("Sorry, no apple release of the binaries yet!")
-        working_dll = false
+        global working_dll = false
     elseif Sys.islinux()
+		@info("Downloading $url/cvortex_Linux_x64_release.dll")
         run(download_cmd("$url/cvortex_Linux_x64_release.so", "libcvortex.so"))
     end
 
@@ -57,10 +59,12 @@ if !isfile(tagfile) || readchomp(tagfile) != "$cvortexver $WORD_SIZE"
     catch
 		@info("Failed to successfully link to library using dlopen. Downloading "*
 			"CVortex without OpenMP.")
-        opencl_dll = false    
+        global opencl_dll = false    
         if Sys.iswindows()
+		@info("Downloading $url/cvortex_Win_x64_release_NoOCL.dll")
             run(download_cmd("$url/cvortex_Win_x64_release_NoOCL.dll", "libcvortex.dll"))
         elseif Sys.islinux()
+		@info("Downloading $url/cvortex_Linux_x64_release_NoOCL.so")
             run(download_cmd("$url/cvortex_Linux_x64_release_NoOCL.so", "libcvortex.so"))
         end
         try
@@ -71,7 +75,7 @@ if !isfile(tagfile) || readchomp(tagfile) != "$cvortexver $WORD_SIZE"
             end
         catch
 			@info("Failed to successfully link to library using dlopen.")
-            working_dll = false
+            global working_dll = false
         end
     end
     
