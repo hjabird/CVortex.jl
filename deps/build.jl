@@ -51,7 +51,7 @@ if !isfile(tagfile) || readchomp(tagfile) != "$cvortexver $WORD_SIZE"
     end
 
     try
-        dlopen("libcvortex")
+        dlopen("./libcvortex")
 		@info("Successfully linked to library using dlopen.")
         open(tagfile, "w") do f
             println(f, "$cvortexver")
@@ -68,7 +68,7 @@ if !isfile(tagfile) || readchomp(tagfile) != "$cvortexver $WORD_SIZE"
             run(download_cmd("$url/cvortex_Linux_x64_release_NoOCL.so", "libcvortex.so"))
         end
         try
-            dlopen("libcvortex")
+            dlopen("./libcvortex")
 			@info("Successfully linked to library using dlopen. (No OpenCL version)")
             open(tagfile, "w") do f
                 println(f, "$cvortexver NoOpenCL")
