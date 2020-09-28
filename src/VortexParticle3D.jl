@@ -713,7 +713,7 @@ function particle_visc_induced_dvort(
 	check_particle_definition_3D(induced_particle_position, 
 		induced_particle_vorticity, induced_particle_volume)
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
-	@assert(kernel.eta_fn!=Cvoid, "You cannot use this regularisation "*
+	@assert(kernel.eta_3D!=Cvoid, "You cannot use this regularisation "*
 		"function for viscous simulations. Consider Winckelmans or Gaussian.")
 	
     inducing_particle = VortexParticle3D(
@@ -739,7 +739,7 @@ function particle_visc_induced_dvort(
 			inducing_particle, induced_particle, kernel, 
 				regularisation_radius, kinematic_visc
 			)
-	return ret
+	return Vector{Float32}(ret)
 end
 
 function particle_visc_induced_dvort(
@@ -816,7 +816,7 @@ function particle_visc_induced_dvort(
 	check_particle_definition_3D(induced_particle_position, 
 		induced_particle_vorticity, induced_particle_volume)
 	convertable_to_F32(regularisation_radius, "regularisation_radius")
-	@assert(kernel.eta_fn!=Cvoid, "You cannot use this regularisation "*
+	@assert(kernel.eta_3D!=Cvoid, "You cannot use this regularisation "*
 		"function for viscous simulations. Consider Winckelmans or Gaussian.")
 	
 	np = size(induced_particle_position)[1]
