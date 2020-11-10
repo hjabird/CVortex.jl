@@ -191,7 +191,7 @@ function particle_induced_velocity(
 			(Ref{VortexParticle3D}, Vec3f, Ref{RegularisationFunction}, Cfloat),
 			inducing_particle, mes_pnt, kernel, regularisation_radius
 			)
-	return [ret.x, ret.y, ret.z]
+	return Vector{Float32}(ret)
 end
 
 function particle_induced_velocity(
@@ -411,7 +411,7 @@ function particle_induced_dvort(
 				Ref{RegularisationFunction}, Cfloat),
 			inducing_particle, induced_particle, kernel, regularisation_radius
 			)
-	return ret
+	return Vector{Float32}(ret)
 end
 
 
@@ -718,7 +718,7 @@ function particle_visc_induced_dvort(
 	
     inducing_particle = VortexParticle3D(
         inducing_particle_position, 
-        inducing_particle_vorticity, induced_particle_volume)
+        inducing_particle_vorticity, inducing_particle_volume)
 	induced_particle = VortexParticle3D(
 		induced_particle_position, 
 		induced_particle_vorticity, induced_particle_volume)

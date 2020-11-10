@@ -87,7 +87,7 @@ function particle_induced_velocity(
 			(Ref{VortexParticle2D}, Vec2f, Ref{RegularisationFunction}, Cfloat),
 			inducing_particle, mes_pnt, kernel, regularisation_radius
 			)
-	return [ret.x, ret.y]
+	return Vector{Float32}(ret)
 end
 
 function particle_induced_velocity(
@@ -259,7 +259,7 @@ function particle_visc_induced_dvort(
 	ret = ccall(
 		("cvtx_P2D_S2S_visc_dvort", libcvortex), 
 		Cfloat, 
-		(Ptr{VortexParticle2D}, Ptr{VortexParticle2D}, 
+		(Ref{VortexParticle2D}, Ref{VortexParticle2D}, 
 			Ref{RegularisationFunction}, Cfloat, Cfloat),
 		inducing_particle, induced_particle, kernel, 
 			regularisation_radius, kinematic_visc
@@ -372,7 +372,7 @@ function particle_visc_induced_dvort(
 		ret = ccall(
 			("cvtx_P2D_M2S_visc_dvort", libcvortex), 
 			Cfloat, 
-			(Ptr{Ptr{VortexParticle2D}}, Cint, Ptr{VortexParticle2D}, 
+			(Ptr{Ptr{VortexParticle2D}}, Cint, Ref{VortexParticle2D}, 
 				Ref{RegularisationFunction}, Cfloat, Cfloat),
 			pargarr, length(inducing_particles), induced_particle,
 				kernel, regularisation_radius, kinematic_visc
