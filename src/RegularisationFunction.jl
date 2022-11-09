@@ -30,14 +30,6 @@
 A 3D vortex regularisation function.
 
 The method by which the singular nature of a vortex particle is managed.
-Generally, this structure is best obtained via *_regularisation(). For example
-singular_regularisation(), planetary_regularisation(), 
-gaussian_regularisation() and winckelmans_regulariation().
-
-Exposure of this allows the use of user kernels in the CPU multithreaded
-implementations in cvortex. If you're interested in this, looking at the
-cvortex library and the source of cvortex.jl is suggested to understand
-the required functions signitures. 
 
 # Examples
 ```
@@ -49,13 +41,7 @@ my_regularisation_kernel = gaussian_regularisation()
 ```
 """
 struct RegularisationFunction
-	g_3D :: Ptr{Cvoid}			# Actually float(*g_3D)(float rho)
-	g_2D :: Ptr{Cvoid}			# Actually float(*g_2D)(float rho)
-	zeta_3D :: Ptr{Cvoid}		# Actually float(*zeta_3D)(float rho)
-	combined_3D :: Ptr{Cvoid}	# Actually void(*combined_3D)(float rho, float* g, float* zeta)
-	eta_3D :: Ptr{Cvoid}		# Actually float(*eta_3D)(float rho)
-	eta_2D :: Ptr{Cvoid}		# Actually float(*eta_2D)(float rho)
-	cl_kernel_name_ext :: NTuple{32, Cchar}	# Char[32]
+	val :: CInt
 end
 
 #= Functions to to get VortexFunc structures =#
